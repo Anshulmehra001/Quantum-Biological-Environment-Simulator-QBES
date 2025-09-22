@@ -1,0 +1,55 @@
+# Default configuration for QBES simulations
+# Quantum Biological Environment Simulator
+
+# System Configuration
+system:
+  pdb_file: "system.pdb"
+  force_field: "amber14"
+  solvent_model: "tip3p"
+  ionic_strength: 0.15  # M
+
+# Simulation Parameters
+simulation:
+  temperature: 300.0  # Kelvin
+  simulation_time: 1.0e-12  # seconds (1 ps)
+  time_step: 1.0e-15  # seconds (1 fs)
+  
+# Quantum Subsystem Selection
+quantum_subsystem:
+  selection_method: "chromophores"  # Options: chromophores, active_site, custom
+  custom_selection: ""  # Custom atom selection string if method is "custom"
+  max_quantum_atoms: 100  # Maximum atoms in quantum subsystem
+  
+# Noise Model Configuration
+noise_model:
+  type: "protein_ohmic"  # Options: protein_ohmic, membrane, solvent_ionic
+  coupling_strength: 1.0  # Relative coupling strength
+  cutoff_frequency: 1.0e13  # Hz
+  
+# Output Configuration
+output:
+  directory: "./qbes_output"
+  save_trajectory: true
+  save_checkpoints: true
+  checkpoint_interval: 1000  # time steps
+  plot_format: "png"  # Options: png, pdf, svg
+  
+# Computational Settings
+computation:
+  use_gpu: false
+  max_memory_gb: 8
+  num_threads: 4
+  precision: "double"  # Options: single, double
+  
+# Analysis Settings
+analysis:
+  calculate_coherence_measures: true
+  calculate_entanglement: true
+  statistical_analysis: true
+  uncertainty_quantification: true
+  
+# Validation Settings
+validation:
+  energy_conservation_tolerance: 1.0e-6
+  probability_conservation_tolerance: 1.0e-10
+  run_benchmark_tests: true

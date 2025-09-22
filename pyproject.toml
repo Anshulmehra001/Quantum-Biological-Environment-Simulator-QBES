@@ -1,0 +1,143 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qbes"
+dynamic = ["version"]
+description = "Quantum Biological Environment Simulator"
+readme = "docs/README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "QBES Development Team", email = "qbes@example.com"}
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "numpy>=1.20.0",
+    "scipy>=1.7.0",
+    "matplotlib>=3.3.0",
+    "qutip>=4.6.0",
+    "openmm>=7.6.0",
+    "mdtraj>=1.9.0",
+    "biopython>=1.78",
+    "pandas>=1.3.0",
+    "h5py>=3.1.0",
+    "pyyaml>=5.4.0",
+    "numba>=0.54.0",
+    "seaborn>=0.11.0",
+    "plotly>=5.0.0",
+    "tqdm>=4.60.0",
+    "click>=8.0.0",
+    "astropy>=4.2.0",
+    "joblib>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0",
+    "pytest-cov>=2.0",
+    "black>=21.0",
+    "flake8>=3.8",
+    "mypy>=0.800",
+    "sphinx>=4.0",
+    "sphinx-rtd-theme>=0.5",
+]
+gpu = [
+    "cupy>=9.0",
+]
+visualization = [
+    "plotly>=5.0",
+    "seaborn>=0.11",
+    "ipywidgets>=7.6",
+]
+
+[project.scripts]
+qbes = "qbes.cli:main"
+qbes-config = "qbes.cli:config_main"
+qbes-benchmark = "qbes.cli:benchmark_main"
+
+[project.urls]
+Homepage = "https://github.com/qbes-team/qbes"
+Documentation = "https://qbes.readthedocs.io/"
+Repository = "https://github.com/qbes-team/qbes"
+"Bug Tracker" = "https://github.com/qbes-team/qbes/issues"
+
+[tool.setuptools_scm]
+write_to = "qbes/_version.py"
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--cov=qbes",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "gpu: marks tests that require GPU",
+]
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "qutip.*",
+    "openmm.*",
+    "mdtraj.*",
+    "Bio.*",
+    "numba.*",
+    "plotly.*",
+    "seaborn.*",
+]
+ignore_missing_imports = true

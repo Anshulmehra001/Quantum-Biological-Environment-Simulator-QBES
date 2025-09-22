@@ -1,0 +1,48 @@
+# Example configuration for photosystem simulation
+# Quantum Biological Environment Simulator
+
+# System Configuration
+system:
+  pdb_file: "photosystem_ii.pdb"
+  force_field: "amber14"
+  solvent_model: "tip3p"
+  ionic_strength: 0.15
+
+# Simulation Parameters
+simulation:
+  temperature: 300.0
+  simulation_time: 5.0e-12  # 5 ps
+  time_step: 5.0e-16  # 0.5 fs for fast quantum dynamics
+  
+# Quantum Subsystem Selection
+quantum_subsystem:
+  selection_method: "chromophores"
+  max_quantum_atoms: 200  # Larger for photosystem
+  
+# Noise Model Configuration
+noise_model:
+  type: "protein_ohmic"
+  coupling_strength: 0.8  # Moderate coupling
+  cutoff_frequency: 5.0e13  # Higher for photosystem
+  
+# Output Configuration
+output:
+  directory: "./photosystem_output"
+  save_trajectory: true
+  save_checkpoints: true
+  checkpoint_interval: 500
+  plot_format: "pdf"
+  
+# Computational Settings
+computation:
+  use_gpu: true  # Recommended for larger systems
+  max_memory_gb: 16
+  num_threads: 8
+  precision: "double"
+  
+# Analysis Settings
+analysis:
+  calculate_coherence_measures: true
+  calculate_entanglement: true
+  statistical_analysis: true
+  uncertainty_quantification: true
