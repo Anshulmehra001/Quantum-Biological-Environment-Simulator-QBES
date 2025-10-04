@@ -12,8 +12,14 @@ from .config_manager import ConfigurationManager
 from .quantum_engine import QuantumEngine
 from .md_engine import MDEngine
 from .noise_models import NoiseModelFactory
-from .analysis import ResultsAnalyzer
+from .analysis import ResultsAnalyzer, CoherenceAnalyzer
 from .visualization import VisualizationEngine
+
+# Import simulation engine
+try:
+    from .simulation_engine import SimulationEngine
+except ImportError:
+    SimulationEngine = None
 
 __all__ = [
     "ConfigurationManager",
@@ -21,5 +27,7 @@ __all__ = [
     "MDEngine",
     "NoiseModelFactory",
     "ResultsAnalyzer",
-    "VisualizationEngine"
+    "CoherenceAnalyzer",
+    "VisualizationEngine",
+    "SimulationEngine"
 ]

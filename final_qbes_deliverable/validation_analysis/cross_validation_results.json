@@ -1,0 +1,25 @@
+[
+  {
+    "package_name": "MockReference",
+    "package_version": "1.0.0-mock",
+    "system_name": "two_level_system",
+    "validation_passed": "False",
+    "qbes_results": [
+      0.55,
+      0.45
+    ],
+    "reference_results": [
+      0.6,
+      0.4
+    ],
+    "relative_differences": [
+      0.08333333333319434,
+      0.12499999999968747
+    ],
+    "max_relative_difference": 0.12499999999968747,
+    "mean_relative_difference": 0.10416666666644091,
+    "correlation_coefficient": 1.0,
+    "tolerance": 0.0001,
+    "error_message": null
+  }
+]

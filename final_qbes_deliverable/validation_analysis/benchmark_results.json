@@ -1,0 +1,13 @@
+[
+  {
+    "system_name": "Two-Level System",
+    "test_passed": "True",
+    "numerical_result": 0.22984884706593292,
+    "analytical_result": 0.22984884706593015,
+    "relative_error": 1.2075577480563767e-14,
+    "absolute_error": 2.7755575615628914e-15,
+    "computation_time": 0.0836939811706543,
+    "tolerance": 1e-06,
+    "error_message": null
+  }
+]

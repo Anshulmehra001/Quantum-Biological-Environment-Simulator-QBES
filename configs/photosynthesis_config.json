@@ -1,0 +1,28 @@
+{
+  "system": {
+    "type": "two_level",
+    "temperature": 300.0,
+    "hamiltonian": {
+      "energy_gap": 1.5,
+      "coupling": 0.05
+    }
+  },
+  "simulation": {
+    "time_step": 0.05,
+    "total_time": 20.0,
+    "method": "lindblad"
+  },
+  "noise": {
+    "model": "protein_ohmic",
+    "strength": 0.05
+  },
+  "output": {
+    "save_trajectory": true,
+    "analysis": [
+      "coherence",
+      "purity",
+      "energy",
+      "entanglement"
+    ]
+  }
+}

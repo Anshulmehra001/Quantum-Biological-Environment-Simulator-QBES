@@ -1,0 +1,61 @@
+QBES Core System Test Report
+========================================
+
+Test Execution Summary:
+  Start Time: 2025-10-02 01:10:28
+  End Time: 2025-10-02 01:10:33
+  Total Duration: 4.9 seconds
+  Total Tests: 17
+  Passed: 11
+  Failed: 6
+  Success Rate: 64.7%
+
+Detailed Test Results:
+------------------------------
+Import qbes.core.data_models: PASS (2.61s)
+
+Import qbes.core.interfaces: PASS (0.00s)
+
+Import qbes.config_manager: PASS (0.00s)
+
+Import qbes.quantum_engine: PASS (0.00s)
+
+Import qbes.simulation_engine: PASS (0.01s)
+
+Import qbes.noise_models: PASS (0.00s)
+
+Import qbes.analysis: PASS (0.00s)
+
+Import qbes.visualization: PASS (0.00s)
+
+Import qbes.cli: PASS (0.02s)
+
+Data Models: PASS (0.00s)
+  config_created: True
+  atom_created: True
+
+Configuration Manager: FAIL (0.00s)
+  error: 
+
+Quantum Engine: FAIL (0.00s)
+  error: 
+
+Noise Models: FAIL (0.00s)
+  error: 'NoiseModelFactory' object has no attribute 'create_noise_model'
+
+Analysis Tools: FAIL (0.00s)
+  error: cannot import name 'CoherenceAnalyzer' from 'qbes.analysis' (D:\QBES\qbes\analysis.py)
+
+Benchmark Core: FAIL (0.01s)
+  error: 
+
+CLI Basic: PASS (2.28s)
+  help_command_works: True
+
+Validation Core: FAIL (0.00s)
+  error: ValidationSummary.__init__() got an unexpected keyword argument 'benchmark_score'
+
+
+Recommendations:
+---------------
+FAIR: Core system has some issues.

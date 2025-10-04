@@ -1,0 +1,23 @@
+noise_model:
+  coupling_strength: 1.0
+  cutoff_frequency: 10000000000000.0
+  type: protein_ohmic
+output:
+  checkpoint_interval: 1000
+  directory: ./qbes_output
+  plot_format: png
+  save_checkpoints: true
+  save_trajectory: true
+quantum_subsystem:
+  custom_selection: ''
+  max_quantum_atoms: 100
+  selection_method: chromophores
+simulation:
+  simulation_time: 1.0e-12
+  temperature: 300.0
+  time_step: 1.0e-15
+system:
+  force_field: amber14
+  ionic_strength: 0.15
+  pdb_file: system.pdb
+  solvent_model: tip3p

@@ -1,0 +1,24 @@
+noise_model:
+  coupling_strength: 2.0
+  cutoff_frequency: 50000000000000.0
+  reorganization_energy: 35.0
+  type: protein_ohmic
+output:
+  checkpoint_interval: 500
+  directory: ./photosystem_output
+  plot_format: png
+  save_checkpoints: true
+  save_trajectory: true
+quantum_subsystem:
+  custom_selection: resname CHL BCL
+  max_quantum_atoms: 200
+  selection_method: chromophores
+simulation:
+  simulation_time: 1.0e-12
+  temperature: 300.0
+  time_step: 1.0e-15
+system:
+  force_field: amber14
+  ionic_strength: 0.15
+  pdb_file: photosystem.pdb
+  solvent_model: tip3p

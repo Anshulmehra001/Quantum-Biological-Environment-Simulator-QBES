@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QBES Simulator - Interactive Interface</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e293b, #334155);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #334155;
+        }
+        
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+        
+        .btn-secondary {
+            background: #374151;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+        
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 2rem;
+            min-height: calc(100vh - 80px);
+        }
+        
+        .sidebar {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 1.5rem;
+            height: fit-content;
+            border: 1px solid #334155;
+        }
+        
+        .main-content {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid #334155;
+        }
+        
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #f1f5f9;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #cbd5e1;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            background: #0f172a;
+            color: white;
+            font-size: 0.9rem;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .range-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .range-input {
+            flex: 1;
+        }
+        
+        .range-value {
+            min-width: 60px;
+            text-align: center;
+            background: #0f172a;
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .preset-btn {
+            padding: 0.75rem;
+            background: #374151;
+            border: 1px solid #4b5563;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+        }
+        
+        .preset-btn:hover {
+            background: #4b5563;
+        }
+        
+        .preset-btn.active {
+            background: #3b82f6;
+            border-color: #2563eb;
+        }
+        
+        .run-button {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .run-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+        
+        .run-button:disabled {
+            background: #374151;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .results-container {
+            display: none;
+        }
+        
+        .results-container.show {
+            display: block;
+        }
+        
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .export-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .result-card {
+            background: #0f172a;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+        
+        .result-label {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+        }
+        
+        .result-value {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #f1f5f9;
+            font-family: monospace;
+        }
+        
+        .plot-container {
+            background: #0f172a;
+            border-radius: 8px;
+            padding: 1rem;
+            border: 1px solid #334155;
+            margin-bottom: 1rem;
+        }
+        
+        .plot-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .plot-tab {
+            padding: 0.5rem 1rem;
+            background: #374151;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .plot-tab.active {
+            background: #3b82f6;
+        }
+        
+        .plot-image {
+            width: 100%;
+            border-radius: 6px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #94a3b8;
+        }
+        
+        .error {
+            background: #dc2626;
+            color: white;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+        
+        .success {
+            background: #059669;
+            color: white;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-atom"></i>
+                QBES Simulator
+            </div>
+            <div class="nav-buttons">
+                <a href="/" class="btn btn-secondary">
+                    <i class="fas fa-home"></i> Home
+                </a>
+                <button class="btn btn-secondary" onclick="showHistory()">
+                    <i class="fas fa-history"></i> History
+                </button>
+                <button class="btn btn-secondary" onclick="showHelp()">
+                    <i class="fas fa-question-circle"></i> Help
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="sidebar">
+            <h2 class="section-title">Simulation Parameters</h2>
+            
+            <div class="form-group">
+                <label class="form-label">Preset Configurations</label>
+                <div class="preset-buttons" id="presetButtons">
+                    <!-- Presets will be loaded here -->
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">System Type</label>
+                <select class="form-input" id="systemType">
+                    <option value="two_level">Two-Level System</option>
+                    <option value="three_level">Three-Level System</option>
+                    <option value="spin_chain">Spin Chain</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Temperature (K)</label>
+                <div class="range-container">
+                    <input type="range" class="form-input range-input" id="temperature" 
+                           min="77" max="400" step="1" value="300">
+                    <div class="range-value" id="temperatureValue">300</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Energy Gap (eV)</label>
+                <div class="range-container">
+                    <input type="range" class="form-input range-input" id="energyGap" 
+                           min="0.1" max="5.0" step="0.1" value="2.0">
+                    <div class="range-value" id="energyGapValue">2.0</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Coupling Strength (eV)</label>
+                <div class="range-container">
+                    <input type="range" class="form-input range-input" id="coupling" 
+                           min="0.01" max="1.0" step="0.01" value="0.1">
+                    <div class="range-value" id="couplingValue">0.10</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Noise Model</label>
+                <select class="form-input" id="noiseModel">
+                    <option value="protein_ohmic">Protein Environment</option>
+                    <option value="membrane_fluctuations">Membrane Fluctuations</option>
+                    <option value="solvent_dynamics">Solvent Dynamics</option>
+                    <option value="thermal_bath">Thermal Bath</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Simulation Time (ps)</label>
+                <div class="range-container">
+                    <input type="range" class="form-input range-input" id="totalTime" 
+                           min="1" max="100" step="1" value="10">
+                    <div class="range-value" id="totalTimeValue">10</div>
+                </div>
+            </div>
+            
+            <button class="run-button" id="runButton" onclick="runSimulation()">
+                <i class="fas fa-play"></i> Run Simulation
+            </button>
+        </div>
+        
+        <div class="main-content">
+            <div id="welcomeMessage">
+                <h2 class="section-title">Welcome to QBES Simulator</h2>
+                <p style="color: #94a3b8; line-height: 1.6;">
+                    Configure your quantum biology simulation using the controls on the left. 
+                    Choose from preset configurations or customize parameters manually. 
+                    Results will appear here with interactive visualizations.
+                </p>
+            </div>
+            
+            <div class="results-container" id="resultsContainer">
+                <div class="results-header">
+                    <h2 class="section-title">Simulation Results</h2>
+                    <div class="export-buttons">
+                        <button class="btn btn-secondary" onclick="exportResults('json')">
+                            <i class="fas fa-download"></i> JSON
+                        </button>
+                        <button class="btn btn-secondary" onclick="exportResults('csv')">
+                            <i class="fas fa-file-csv"></i> CSV
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="messageContainer"></div>
+                
+                <div class="results-grid" id="resultsGrid">
+                    <!-- Results will be populated here -->
+                </div>
+                
+                <div class="plot-container">
+                    <div class="plot-tabs">
+                        <button class="plot-tab active" onclick="showPlot('coherence')">Coherence</button>
+                        <button class="plot-tab" onclick="showPlot('purity')">Purity</button>
+                        <button class="plot-tab" onclick="showPlot('all')">Combined</button>
+                    </div>
+                    <div id="plotContainer">
+                        <div class="loading">No simulation data yet</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentResults = null;
+        let presets = {};
+        
+        // Initialize the interface
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPresets();
+            setupRangeInputs();
+        });
+        
+        function setupRangeInputs() {
+            const ranges = ['temperature', 'energyGap', 'coupling', 'totalTime'];
+            ranges.forEach(id => {
+                const input = document.getElementById(id);
+                const value = document.getElementById(id + 'Value');
+                
+                input.addEventListener('input', function() {
+                    let val = this.value;
+                    if (id === 'coupling') {
+                        val = parseFloat(val).toFixed(2);
+                    }
+                    value.textContent = val;
+                });
+            });
+        }
+        
+        async function loadPresets() {
+            try {
+                const response = await fetch('/api/presets');
+                presets = await response.json();
+                
+                const container = document.getElementById('presetButtons');
+                container.innerHTML = '';
+                
+                Object.entries(presets).forEach(([key, preset]) => {
+                    const button = document.createElement('button');
+                    button.className = 'preset-btn';
+                    button.innerHTML = `
+                        <div style="font-weight: 600; margin-bottom: 0.25rem;">${preset.name}</div>
+                        <div style="font-size: 0.8rem; color: #94a3b8;">${preset.description}</div>
+                    `;
+                    button.onclick = () => loadPreset(key);
+                    container.appendChild(button);
+                });
+            } catch (error) {
+                console.error('Failed to load presets:', error);
+            }
+        }
+        
+        function loadPreset(presetKey) {
+            const preset = presets[presetKey];
+            if (!preset) return;
+            
+            // Update form values
+            document.getElementById('systemType').value = preset.system_type;
+            document.getElementById('temperature').value = preset.temperature;
+            document.getElementById('energyGap').value = preset.energy_gap;
+            document.getElementById('coupling').value = preset.coupling;
+            document.getElementById('noiseModel').value = preset.noise_model;
+            document.getElementById('totalTime').value = preset.total_time;
+            
+            // Update display values
+            document.getElementById('temperatureValue').textContent = preset.temperature;
+            document.getElementById('energyGapValue').textContent = preset.energy_gap;
+            document.getElementById('couplingValue').textContent = preset.coupling.toFixed(2);
+            document.getElementById('totalTimeValue').textContent = preset.total_time;
+            
+            // Update active preset
+            document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.closest('.preset-btn').classList.add('active');
+        }
+        
+        async function runSimulation() {
+            const button = document.getElementById('runButton');
+            const resultsContainer = document.getElementById('resultsContainer');
+            const welcomeMessage = document.getElementById('welcomeMessage');
+            const messageContainer = document.getElementById('messageContainer');
+            
+            // Disable button and show loading
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
+            
+            // Hide welcome message and show results container
+            welcomeMessage.style.display = 'none';
+            resultsContainer.classList.add('show');
+            
+            // Clear previous messages
+            messageContainer.innerHTML = '<div class="loading">Running simulation...</div>';
+            
+            try {
+                const params = {
+                    system_type: document.getElementById('systemType').value,
+                    temperature: parseFloat(document.getElementById('temperature').value),
+                    energy_gap: parseFloat(document.getElementById('energyGap').value),
+                    coupling: parseFloat(document.getElementById('coupling').value),
+                    noise_model: document.getElementById('noiseModel').value,
+                    total_time: parseFloat(document.getElementById('totalTime').value)
+                };
+                
+                const response = await fetch('/api/simulate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(params)
+                });
+                
+                const results = await response.json();
+                
+                if (results.success) {
+                    currentResults = results;
+                    displayResults(results);
+                    messageContainer.innerHTML = '<div class="success">Simulation completed successfully!</div>';
+                } else {
+                    messageContainer.innerHTML = `<div class="error">Simulation failed: ${results.error}</div>`;
+                }
+                
+            } catch (error) {
+                messageContainer.innerHTML = `<div class="error">Network error: ${error.message}</div>`;
+            } finally {
+                // Re-enable button
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-play"></i> Run Simulation';
+            }
+        }
+        
+        function displayResults(results) {
+            const grid = document.getElementById('resultsGrid');
+            
+            const metrics = [
+                { label: 'Decoherence Rate', value: `${results.decoherence_rate?.toFixed(3)} ps⁻¹`, icon: 'fas fa-wave-square' },
+                { label: 'Coherence Lifetime', value: `${results.coherence_lifetime?.toFixed(1)} ps`, icon: 'fas fa-clock' },
+                { label: 'Final Coherence', value: `${results.coherence?.[results.coherence.length-1]?.toFixed(3)}`, icon: 'fas fa-link' },
+                { label: 'Final Purity', value: `${results.purity?.[results.purity.length-1]?.toFixed(3)}`, icon: 'fas fa-gem' },
+                { label: 'Temperature', value: `${results.config?.temperature} K`, icon: 'fas fa-thermometer-half' },
+                { label: 'Simulation Time', value: `${results.config?.total_time} ps`, icon: 'fas fa-stopwatch' }
+            ];
+            
+            grid.innerHTML = metrics.map(metric => `
+                <div class="result-card">
+                    <div class="result-label">
+                        <i class="${metric.icon}"></i> ${metric.label}
+                    </div>
+                    <div class="result-value">${metric.value}</div>
+                </div>
+            `).join('');
+            
+            // Show first plot
+            showPlot('coherence');
+        }
+        
+        function showPlot(plotType) {
+            if (!currentResults || !currentResults.plots) return;
+            
+            // Update active tab
+            document.querySelectorAll('.plot-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            const plotContainer = document.getElementById('plotContainer');
+            const plotData = currentResults.plots[plotType];
+            
+            if (plotData) {
+                plotContainer.innerHTML = `<img src="data:image/png;base64,${plotData}" class="plot-image" alt="${plotType} plot">`;
+            } else {
+                plotContainer.innerHTML = '<div class="loading">Plot not available</div>';
+            }
+        }
+        
+        async function exportResults(format) {
+            if (!currentResults) {
+                alert('No simulation results to export');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/export/${format}`);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `qbes_results.${format}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    alert('Export failed');
+                }
+            } catch (error) {
+                alert(`Export error: ${error.message}`);
+            }
+        }
+        
+        async function showHistory() {
+            try {
+                const response = await fetch('/api/history');
+                const data = await response.json();
+                
+                let historyText = `Simulation History (${data.total_count} total):\n\n`;
+                data.history.forEach((sim, index) => {
+                    historyText += `${index + 1}. ${sim.timestamp}\n`;
+                    historyText += `   Temperature: ${sim.config?.temperature}K\n`;
+                    historyText += `   Coherence Lifetime: ${sim.coherence_lifetime?.toFixed(1)}ps\n\n`;
+                });
+                
+                alert(historyText);
+            } catch (error) {
+                alert('Failed to load history');
+            }
+        }
+        
+        function showHelp() {
+            const helpText = `QBES Simulator Help:
+
+1. Choose a preset configuration or set parameters manually
+2. Adjust temperature, energy gap, and coupling strength
+3. Select appropriate noise model for your system
+4. Set simulation time (longer = more detailed)
+5. Click "Run Simulation" to start
+6. View results and export data as needed
+
+Noise Models:
+• Protein Environment: For enzyme active sites
+• Membrane Fluctuations: For membrane proteins  
+• Solvent Dynamics: For aqueous systems
+• Thermal Bath: General thermal environment
+
+Tips:
+• Lower temperatures = longer coherence times
+• Higher coupling = faster dynamics
+• Protein environments typically have moderate decoherence`;
+            
+            alert(helpText);
+        }
+    </script>
+</body>
+</html>

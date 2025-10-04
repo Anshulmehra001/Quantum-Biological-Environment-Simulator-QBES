@@ -1,0 +1,154 @@
+{
+  "test_summary": {
+    "total_tests": 17,
+    "passed_tests": 11,
+    "failed_tests": 6,
+    "success_rate": 0.6470588235294118,
+    "total_duration_seconds": 4.937877,
+    "test_start_time": "2025-10-02T01:10:28.689885",
+    "test_end_time": "2025-10-02T01:10:33.627785"
+  },
+  "test_results": [
+    {
+      "test_name": "Import qbes.core.data_models",
+      "success": true,
+      "duration_seconds": 2.6109607219696045,
+      "timestamp": "2025-10-02T01:10:31.301795",
+      "details": {}
+    },
+    {
+      "test_name": "Import qbes.core.interfaces",
+      "success": true,
+      "duration_seconds": 6.198883056640625e-06,
+      "timestamp": "2025-10-02T01:10:31.302010",
+      "details": {}
+    },
+    {
+      "test_name": "Import qbes.config_manager",
+      "success": true,
+      "duration_seconds": 3.0994415283203125e-06,
+      "timestamp": "2025-10-02T01:10:31.302154",
+      "details": {}
+    },
+    {
+      "test_name": "Import qbes.quantum_engine",
+      "success": true,
+      "duration_seconds": 4.0531158447265625e-06,
+      "timestamp": "2025-10-02T01:10:31.302235",
+      "details": {}
+    },
+    {
+      "test_name": "Import qbes.simulation_engine",
+      "success": true,
+      "duration_seconds": 0.005292654037475586,
+      "timestamp": "2025-10-02T01:10:31.307622",
+      "details": {}
+    },
+    {
+      "test_name": "Import qbes.noise_models",
+      "success": true,
+      "duration_seconds": 4.291534423828125e-06,
+      "timestamp": "2025-10-02T01:10:31.307784",
+      "details": {}
+    },
+    {
+      "test_name": "Import qbes.analysis",
+      "success": true,
+      "duration_seconds": 7.62939453125e-06,
+      "timestamp": "2025-10-02T01:10:31.307904",
+      "details": {}
+    },
+    {
+      "test_name": "Import qbes.visualization",
+      "success": true,
+      "duration_seconds": 1.9073486328125e-06,
+      "timestamp": "2025-10-02T01:10:31.307984",
+      "details": {}
+    },
+    {
+      "test_name": "Import qbes.cli",
+      "success": true,
+      "duration_seconds": 0.0248105525970459,
+      "timestamp": "2025-10-02T01:10:31.332873",
+      "details": {}
+    },
+    {
+      "test_name": "Data Models",
+      "success": true,
+      "duration_seconds": 3.6716461181640625e-05,
+      "timestamp": "2025-10-02T01:10:31.333337",
+      "details": {
+        "config_created": true,
+        "atom_created": true
+      }
+    },
+    {
+      "test_name": "Configuration Manager",
+      "success": false,
+      "duration_seconds": 1.33514404296875e-05,
+      "timestamp": "2025-10-02T01:10:31.333628",
+      "details": {
+        "error": ""
+      }
+    },
+    {
+      "test_name": "Quantum Engine",
+      "success": false,
+      "duration_seconds": 7.867813110351562e-06,
+      "timestamp": "2025-10-02T01:10:31.333900",
+      "details": {
+        "error": ""
+      }
+    },
+    {
+      "test_name": "Noise Models",
+      "success": false,
+      "duration_seconds": 9.298324584960938e-06,
+      "timestamp": "2025-10-02T01:10:31.334185",
+      "details": {
+        "error": "'NoiseModelFactory' object has no attribute 'create_noise_model'"
+      }
+    },
+    {
+      "test_name": "Analysis Tools",
+      "success": false,
+      "duration_seconds": 1.239776611328125e-05,
+      "timestamp": "2025-10-02T01:10:31.334440",
+      "details": {
+        "error": "cannot import name 'CoherenceAnalyzer' from 'qbes.analysis' (D:\\QBES\\qbes\\analysis.py)"
+      }
+    },
+    {
+      "test_name": "Benchmark Core",
+      "success": false,
+      "duration_seconds": 0.010759592056274414,
+      "timestamp": "2025-10-02T01:10:31.345437",
+      "details": {
+        "error": ""
+      }
+    },
+    {
+      "test_name": "CLI Basic",
+      "success": true,
+      "duration_seconds": 2.2805562019348145,
+      "timestamp": "2025-10-02T01:10:33.626494",
+      "details": {
+        "help_command_works": true
+      }
+    },
+    {
+      "test_name": "Validation Core",
+      "success": false,
+      "duration_seconds": 1.8596649169921875e-05,
+      "timestamp": "2025-10-02T01:10:33.627085",
+      "details": {
+        "error": "ValidationSummary.__init__() got an unexpected keyword argument 'benchmark_score'"
+      }
+    }
+  ],
+  "system_info": {
+    "python_version": "3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]",
+    "platform": "win32",
+    "working_directory": "D:\\QBES"
+  }
+}

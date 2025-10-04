@@ -1,0 +1,33 @@
+QBES Quantum Simulation Results
+========================================
+
+System Configuration:
+  System Type: Two-level quantum system
+  Temperature: 300.0 K
+  Noise Model: Protein environment (Ohmic)
+  Simulation Time: 10.0 ps
+  Time Steps: 101
+
+Hamiltonian Matrix:
+  [0.0  0.1]
+  [0.1  2.0]  (in eV)
+
+Key Results:
+  Coherence Lifetime: 10.0 ps
+  Decoherence Rate: 0.100 ps^-1
+  Initial Purity: 1.000
+  Final Purity: 0.684
+  Initial Coherence: 1.000
+  Final Coherence: 0.368
+
+Physical Interpretation:
+- The quantum system starts in a coherent superposition state
+- Biological environment (protein) causes decoherence
+- Coherence decays exponentially: C(t) = exp(-t/tau)
+- Coherence lifetime tau = 10 ps is typical for biological systems
+- This demonstrates quantum effects in photosynthesis/enzymes
+
+Applications:
+- Photosynthetic energy transfer efficiency
+- Enzyme catalysis quantum tunneling
+- Quantum biology research
