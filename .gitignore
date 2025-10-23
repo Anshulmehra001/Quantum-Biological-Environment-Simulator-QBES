@@ -152,3 +152,6 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Kiro AI assistant files
+.kiro*/
