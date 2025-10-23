@@ -593,6 +593,9 @@ class SimulationEngine(SimulationEngineInterface):
         
         # Store initial state
         self.state_trajectory.append(self.current_state)
+        
+        # Calculate observables for initial state
+        self._calculate_observables()
     
     def _run_md_step(self):
         """Run a molecular dynamics step to update environmental parameters."""

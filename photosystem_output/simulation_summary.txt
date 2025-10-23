@@ -1,0 +1,14 @@
+Quantum Biological Simulation Results
+=====================================
+
+Configuration:
+  PDB file: photosystem.pdb
+  Temperature: 300.0 K
+  Simulation time: 1e-12 fs
+  Time step: 1e-15 fs
+  Noise model: protein_ohmic
+
+Results:
+  Total steps: 1000
+  Computation time: 173.89 seconds
+  Final energy: 0.000000

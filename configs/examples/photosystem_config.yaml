@@ -6,7 +6,7 @@ system:
   pdb_file: "photosystem_ii.pdb"
   force_field: "amber14"
   solvent_model: "tip3p"
-  ionic_strength: 0.15
+  ionic_strength: 0.0
 
 # Simulation Parameters
 simulation:

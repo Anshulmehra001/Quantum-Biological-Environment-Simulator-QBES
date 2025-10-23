@@ -6,7 +6,7 @@ system:
   pdb_file: "system.pdb"
   force_field: "amber14"
   solvent_model: "tip3p"
-  ionic_strength: 0.15  # M
+  ionic_strength: 0.0  # M
 
 # Simulation Parameters
 simulation:

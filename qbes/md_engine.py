@@ -57,6 +57,7 @@ class MDEngine(MDEngineInterface):
         self.simulation = None
         self.trajectory_data = None
         self.force_field = None
+        self.force_field_name = None  # Store the force field name for later use
         
         # Set up OpenMM platform
         self.platform = self._setup_platform(platform_name)
@@ -115,14 +116,32 @@ class MDEngine(MDEngineInterface):
         try:
             # Load PDB file
             pdb = app.PDBFile(pdb_file)
-            self.topology = pdb.topology
-            self.positions = pdb.positions
             
-            # Set up force field
+            # Set up force field and store the name for later use
             forcefield_files = [self.available_force_fields[force_field]]
             self.force_field = app.ForceField(*forcefield_files)
+            self.force_field_name = force_field  # Store for later reloading with water/ions
             
-            # Create OpenMM system
+            # Create modeller to add missing atoms (especially hydrogens)
+            modeller = app.Modeller(pdb.topology, pdb.positions)
+            
+            # Add missing heavy atoms and residues (like terminal groups)
+            logging.info("Adding missing heavy atoms and residues...")
+            try:
+                # This will add missing atoms within existing residues
+                modeller.addHydrogens(self.force_field)
+                n_atoms_original = len(list(pdb.topology.atoms()))
+                n_atoms_with_h = len(list(modeller.topology.atoms()))
+                logging.info(f"Added {n_atoms_with_h - n_atoms_original} hydrogen atoms")
+            except Exception as e:
+                logging.warning(f"Could not add hydrogens automatically: {e}")
+                logging.info("Attempting to create system with existing atoms only...")
+            
+            # Update topology and positions
+            self.topology = modeller.topology
+            self.positions = modeller.positions
+            
+            # Create OpenMM system - this will validate the structure
             self.system = self.force_field.createSystem(
                 self.topology,
                 nonbondedMethod=app.NoCutoff,  # Will be updated in setup_environment
@@ -131,7 +150,7 @@ class MDEngine(MDEngineInterface):
             )
             
             # Convert to our MolecularSystem format
-            molecular_system = self._convert_to_molecular_system(pdb)
+            molecular_system = self._convert_to_molecular_system(pdb_file)
             
             logging.info(f"Successfully initialized system from {pdb_file} with {force_field}")
             logging.info(f"System contains {molecular_system.atoms.__len__()} atoms")
@@ -142,14 +161,17 @@ class MDEngine(MDEngineInterface):
             logging.error(f"Failed to initialize system: {e}")
             raise RuntimeError(f"System initialization failed: {e}")
     
-    def _convert_to_molecular_system(self, pdb) -> MolecularSystem:
-        """Convert OpenMM PDB to our MolecularSystem format."""
+    def _convert_to_molecular_system(self, pdb_file: str) -> MolecularSystem:
+        """Convert OpenMM topology to our MolecularSystem format.
+        
+        Note: Uses self.topology and self.positions which should be set before calling this.
+        """
         atoms = []
         bonds = []
         residues = {}
         
-        # Extract atoms
-        for atom_idx, atom in enumerate(pdb.topology.atoms()):
+        # Extract atoms from current topology (with hydrogens added)
+        for atom_idx, atom in enumerate(self.topology.atoms()):
             position = self.positions[atom_idx].value_in_unit(unit.nanometer)
             
             atom_obj = Atom(
@@ -168,7 +190,7 @@ class MDEngine(MDEngineInterface):
                 residues[atom.residue.id] = atom.residue.name
         
         # Extract bonds
-        for bond in pdb.topology.bonds():
+        for bond in self.topology.bonds():
             atom1_idx = bond[0].index
             atom2_idx = bond[1].index
             bonds.append((atom1_idx, atom2_idx))
@@ -180,7 +202,7 @@ class MDEngine(MDEngineInterface):
             atoms=atoms,
             bonds=bonds,
             residues=residues,
-            system_name=os.path.basename(pdb.name) if hasattr(pdb, 'name') else "unknown",
+            system_name=os.path.basename(pdb_file),
             total_charge=total_charge
         )
     
@@ -1041,12 +1063,26 @@ class MDEngine(MDEngineInterface):
             raise RuntimeError("System must be initialized before setting up environment")
         
         try:
-            # Add water model to force field
+            # Reload force field with water model included for solvation
             water_file = self.available_water_models[solvent_model]
-            self.force_field.loadFile(water_file)
+            
+            # Get the base force field file that was used during initialization
+            if hasattr(self, 'force_field_name') and self.force_field_name:
+                base_ff_file = self.available_force_fields[self.force_field_name]
+                logging.info(f"Using stored force field: {self.force_field_name} -> {base_ff_file}")
+            else:
+                # Fallback to amber14 if not set
+                base_ff_file = 'amber14-all.xml'
+                logging.warning(f"Force field name not stored, falling back to {base_ff_file}")
+            
+            # Recreate force field with both protein and water/ion parameters
+            logging.info(f"Loading force field: {base_ff_file} + {water_file}")
+            self.force_field = app.ForceField(base_ff_file, water_file)
+            logging.info(f"✅ Force field reloaded successfully")
             
             # Create modeller for solvation
             modeller = app.Modeller(self.topology, self.positions)
+            logging.info(f"Starting solvation with {len(list(self.topology.atoms()))} atoms")
             
             # Add solvent box (10 Å padding)
             padding = 1.0 * unit.nanometer

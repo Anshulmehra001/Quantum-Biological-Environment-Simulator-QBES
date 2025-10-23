@@ -19,6 +19,6 @@ simulation:
   time_step: 1.0e-15
 system:
   force_field: amber14
-  ionic_strength: 0.15
+  ionic_strength: 0.0
   pdb_file: photosystem.pdb
   solvent_model: tip3p

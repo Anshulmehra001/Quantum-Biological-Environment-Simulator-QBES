@@ -23,7 +23,7 @@ def read_requirements():
 
 setup(
     name="qbes",
-    version="1.2.0-dev",
+    version="1.2.0",
     author="Aniket Mehra",
     author_email="aniketmehra715@gmail.com",
     description="Quantum Biological Environment Simulator - A toolkit for simulating quantum mechanics in biological systems",

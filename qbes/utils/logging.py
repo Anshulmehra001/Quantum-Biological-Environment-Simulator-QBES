@@ -76,10 +76,20 @@ class EnhancedLogger:
             timestamp = time.strftime("%H:%M:%S")
             level_str = level.name.ljust(7)
             
-            if self.verbose or level.value >= LogLevel.WARNING.value:
-                print(f"[{timestamp}] {level_str} {message}", end=end, flush=True)
-            elif level == LogLevel.INFO:
-                print(message, end=end, flush=True)
+            # Encode message to handle unicode characters
+            try:
+                if self.verbose or level.value >= LogLevel.WARNING.value:
+                    print(f"[{timestamp}] {level_str} {message}", end=end, flush=True)
+                elif level == LogLevel.INFO:
+                    print(message, end=end, flush=True)
+            except UnicodeEncodeError:
+                # Fallback: remove emoji characters
+                import re
+                clean_message = re.sub(r'[^\x00-\x7F]+', '', message)
+                if self.verbose or level.value >= LogLevel.WARNING.value:
+                    print(f"[{timestamp}] {level_str} {clean_message}", end=end, flush=True)
+                elif level == LogLevel.INFO:
+                    print(clean_message, end=end, flush=True)
     
     def debug(self, message: str):
         """Log debug message."""
@@ -100,16 +110,16 @@ class EnhancedLogger:
     def log_simulation_step(self, step: str, progress: Optional[ProgressInfo] = None):
         """Log a major simulation step with clear status message."""
         step_messages = {
-            'md_initialization': '🔧 Initializing molecular dynamics system...',
-            'quantum_setup': '⚛️  Setting up quantum subsystem...',
-            'hamiltonian_construction': '🧮 Constructing system Hamiltonian...',
-            'noise_model_setup': '🌊 Configuring environmental noise model...',
-            'quantum_evolution': '🚀 Starting quantum evolution...',
-            'md_evolution': '🔄 Running molecular dynamics...',
-            'coupling_calculation': '🔗 Calculating quantum-classical coupling...',
-            'analysis': '📊 Analyzing simulation results...',
-            'output_generation': '💾 Generating output files...',
-            'completion': '✅ Simulation completed successfully!'
+            'md_initialization': '[MD] Initializing molecular dynamics system...',
+            'quantum_setup': '[QM] Setting up quantum subsystem...',
+            'hamiltonian_construction': '[HAM] Constructing system Hamiltonian...',
+            'noise_model_setup': '[NOISE] Configuring environmental noise model...',
+            'quantum_evolution': '[SIM] Starting quantum evolution...',
+            'md_evolution': '[MD] Running molecular dynamics...',
+            'coupling_calculation': '[COUP] Calculating quantum-classical coupling...',
+            'analysis': '[ANAL] Analyzing simulation results...',
+            'output_generation': '[OUT] Generating output files...',
+            'completion': '[OK] Simulation completed successfully!'
         }
         
         message = step_messages.get(step, f"Processing: {step}")
@@ -130,10 +140,10 @@ class EnhancedLogger:
         
         progress = self.current_progress
         
-        # Create progress bar
+        # Create progress bar (use ASCII characters for Windows compatibility)
         bar_width = 30
         filled_width = int(bar_width * progress.progress_percent / 100.0)
-        bar = '█' * filled_width + '░' * (bar_width - filled_width)
+        bar = '#' * filled_width + '-' * (bar_width - filled_width)
         
         # Format time displays
         elapsed_str = self._format_time(progress.elapsed_time)
@@ -147,7 +157,14 @@ class EnhancedLogger:
             f"ETA: {remaining_str}"
         )
         
-        print(progress_line, end='', flush=True)
+        try:
+            print(progress_line, end='', flush=True)
+        except UnicodeEncodeError:
+            # Fallback for encoding issues
+            import re
+            clean_line = re.sub(r'[^\x00-\x7F]+', '', progress_line)
+            print(clean_line, end='', flush=True)
+        
         self.last_progress_update = current_time
     
     def finish_progress(self):
