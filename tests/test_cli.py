@@ -11,7 +11,7 @@ from pathlib import Path
 from click.testing import CliRunner
 from unittest.mock import Mock, patch, MagicMock
 
-from qbes.cli import main, generate_config, validate, run, resume, monitor_sim, status
+from qbes.cli import main, generate_config, validate_config, validate, run, resume, monitor_sim, status
 from qbes.core.data_models import SimulationConfig, ValidationResult
 
 
@@ -131,7 +131,7 @@ class TestCLI:
         mock_validation = ValidationResult(is_valid=True)
         mock_manager.validate_parameters.return_value = mock_validation
         
-        result = self.runner.invoke(validate, [config_file])
+        result = self.runner.invoke(validate_config, [config_file])
         assert result.exit_code == 0
         assert '✓ Configuration is valid' in result.output
     
@@ -157,10 +157,230 @@ class TestCLI:
         mock_validation.warnings = ['Temperature not specified, using default']
         mock_manager.validate_parameters.return_value = mock_validation
         
-        result = self.runner.invoke(validate, [config_file])
+        result = self.runner.invoke(validate_config, [config_file])
         assert result.exit_code == 1
         assert '✗ Configuration validation failed' in result.output
         assert 'Missing required parameter' in result.output
+    
+    @patch('qbes.cli.BenchmarkRunner')
+    def test_validate_command_quick_suite(self, mock_benchmark_runner):
+        """Test validate command with quick suite."""
+        # Mock benchmark runner
+        mock_runner = Mock()
+        mock_benchmark_runner.return_value = mock_runner
+        
+        # Create mock validation results
+        from qbes.benchmarks.benchmark_runner import ValidationResults, ValidationResult as BenchmarkResult
+        
+        mock_results = ValidationResults(
+            suite_type="quick",
+            total_tests=2,
+            passed_tests=2,
+            pass_rate=100.0,
+            overall_accuracy=99.5,
+            results=[
+                BenchmarkResult(
+                    test_name="two_level_rabi",
+                    computed_value=1.0,
+                    reference_value=1.0,
+                    relative_error=0.001,
+                    passed=True,
+                    computation_time=0.5,
+                    tolerance=0.02
+                ),
+                BenchmarkResult(
+                    test_name="harmonic_oscillator",
+                    computed_value=0.5,
+                    reference_value=0.5,
+                    relative_error=0.0001,
+                    passed=True,
+                    computation_time=0.3,
+                    tolerance=0.02
+                )
+            ]
+        )
+        
+        mock_runner.run_validation_suite.return_value = mock_results
+        mock_runner.save_validation_report.return_value = os.path.join(self.temp_dir, 'validation_report.md')
+        
+        result = self.runner.invoke(validate, ['--suite', 'quick', '--output-dir', self.temp_dir])
+        
+        assert result.exit_code == 0
+        assert 'Starting QBES validation suite: quick' in result.output
+        assert 'Total Tests:      2' in result.output
+        assert 'Passed Tests:     2' in result.output
+        assert 'Pass Rate:        100.0%' in result.output
+        assert 'Overall Accuracy: 99.5%' in result.output
+        assert 'CERTIFIED - QBES meets all validation criteria' in result.output
+    
+    @patch('qbes.cli.BenchmarkRunner')
+    def test_validate_command_failed_tests(self, mock_benchmark_runner):
+        """Test validate command with some failed tests."""
+        # Mock benchmark runner
+        mock_runner = Mock()
+        mock_benchmark_runner.return_value = mock_runner
+        
+        # Create mock validation results with failures
+        from qbes.benchmarks.benchmark_runner import ValidationResults, ValidationResult as BenchmarkResult
+        
+        mock_results = ValidationResults(
+            suite_type="standard",
+            total_tests=3,
+            passed_tests=2,
+            pass_rate=66.7,
+            overall_accuracy=85.2,
+            results=[
+                BenchmarkResult(
+                    test_name="two_level_rabi",
+                    computed_value=1.0,
+                    reference_value=1.0,
+                    relative_error=0.001,
+                    passed=True,
+                    computation_time=0.5,
+                    tolerance=0.02
+                ),
+                BenchmarkResult(
+                    test_name="harmonic_oscillator",
+                    computed_value=0.5,
+                    reference_value=0.5,
+                    relative_error=0.0001,
+                    passed=True,
+                    computation_time=0.3,
+                    tolerance=0.02
+                ),
+                BenchmarkResult(
+                    test_name="fmo_coherence",
+                    computed_value=650.0,
+                    reference_value=660.0,
+                    relative_error=0.015,
+                    passed=False,
+                    computation_time=2.1,
+                    tolerance=0.01
+                )
+            ]
+        )
+        
+        mock_runner.run_validation_suite.return_value = mock_results
+        mock_runner.save_validation_report.return_value = os.path.join(self.temp_dir, 'validation_report.md')
+        
+        result = self.runner.invoke(validate, ['--suite', 'standard', '--output-dir', self.temp_dir, '--verbose'])
+        
+        assert result.exit_code == 1
+        assert 'Total Tests:      3' in result.output
+        assert 'Passed Tests:     2' in result.output
+        assert 'Failed Tests:     1' in result.output
+        assert 'Pass Rate:        66.7%' in result.output
+        assert 'Overall Accuracy: 85.2%' in result.output
+        assert 'NOT CERTIFIED - Significant improvements required' in result.output
+        assert 'Failed Tests (1):' in result.output
+        assert 'fmo_coherence' in result.output
+    
+    @patch('qbes.cli.BenchmarkRunner')
+    def test_validate_command_json_format(self, mock_benchmark_runner):
+        """Test validate command with JSON report format."""
+        # Mock benchmark runner
+        mock_runner = Mock()
+        mock_benchmark_runner.return_value = mock_runner
+        
+        # Create mock validation results
+        from qbes.benchmarks.benchmark_runner import ValidationResults, ValidationResult as BenchmarkResult
+        
+        mock_results = ValidationResults(
+            suite_type="quick",
+            total_tests=1,
+            passed_tests=1,
+            pass_rate=100.0,
+            overall_accuracy=99.9,
+            results=[
+                BenchmarkResult(
+                    test_name="test_benchmark",
+                    computed_value=1.0,
+                    reference_value=1.0,
+                    relative_error=0.001,
+                    passed=True,
+                    computation_time=0.5,
+                    tolerance=0.02
+                )
+            ]
+        )
+        
+        # Mock to_dict method
+        mock_results.to_dict = Mock(return_value={
+            'suite_type': 'quick',
+            'total_tests': 1,
+            'passed_tests': 1,
+            'pass_rate': 100.0,
+            'overall_accuracy': 99.9
+        })
+        
+        mock_runner.run_validation_suite.return_value = mock_results
+        mock_runner.save_validation_report.return_value = os.path.join(self.temp_dir, 'validation_report.md')
+        
+        result = self.runner.invoke(validate, [
+            '--suite', 'quick', 
+            '--output-dir', self.temp_dir,
+            '--report-format', 'json'
+        ])
+        
+        assert result.exit_code == 0
+        
+        # Check that JSON file was created
+        json_report = os.path.join(self.temp_dir, 'validation_report.json')
+        assert os.path.exists(json_report)
+        
+        # Verify JSON content
+        with open(json_report, 'r') as f:
+            json_data = json.load(f)
+        
+        assert json_data['suite_type'] == 'quick'
+        assert json_data['total_tests'] == 1
+        assert json_data['passed_tests'] == 1
+    
+    @patch('qbes.cli.BenchmarkRunner')
+    def test_validate_command_tolerance_parameter(self, mock_benchmark_runner):
+        """Test validate command with custom tolerance parameter."""
+        # Mock benchmark runner
+        mock_runner = Mock()
+        mock_benchmark_runner.return_value = mock_runner
+        
+        # Create mock validation results
+        from qbes.benchmarks.benchmark_runner import ValidationResults
+        
+        mock_results = ValidationResults(
+            suite_type="quick",
+            total_tests=1,
+            passed_tests=1,
+            pass_rate=100.0,
+            overall_accuracy=99.0,
+            results=[]
+        )
+        
+        mock_runner.run_validation_suite.return_value = mock_results
+        mock_runner.save_validation_report.return_value = os.path.join(self.temp_dir, 'validation_report.md')
+        
+        result = self.runner.invoke(validate, [
+            '--suite', 'quick',
+            '--output-dir', self.temp_dir,
+            '--tolerance', '0.01',
+            '--verbose'
+        ])
+        
+        assert result.exit_code == 0
+        assert 'Tolerance: 1.0%' in result.output
+    
+    @patch('qbes.cli.BenchmarkRunner')
+    def test_validate_command_execution_error(self, mock_benchmark_runner):
+        """Test validate command with execution error."""
+        # Mock benchmark runner to raise exception
+        mock_runner = Mock()
+        mock_benchmark_runner.return_value = mock_runner
+        mock_runner.run_validation_suite.side_effect = Exception("Benchmark execution failed")
+        
+        result = self.runner.invoke(validate, ['--suite', 'quick', '--output-dir', self.temp_dir])
+        
+        assert result.exit_code == 2
+        assert 'Validation suite execution failed' in result.output
+        assert 'Benchmark execution failed' in result.output
     
     @patch('qbes.cli.SimulationEngine')
     @patch('qbes.cli.ConfigurationManager')
@@ -418,7 +638,7 @@ class TestCLIErrorHandling:
         """Test validating nonexistent config file."""
         nonexistent_config = os.path.join(self.temp_dir, 'nonexistent.yaml')
         
-        result = self.runner.invoke(validate, [nonexistent_config])
+        result = self.runner.invoke(validate_config, [nonexistent_config])
         assert result.exit_code == 2  # Click file not found error
     
     def test_resume_nonexistent_checkpoint(self):

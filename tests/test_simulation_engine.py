@@ -37,7 +37,12 @@ class TestSimulationEngine:
             output_directory=self.temp_dir,
             force_field="amber14",
             solvent_model="tip3p",
-            ionic_strength=0.15
+            ionic_strength=0.15,
+            # New debugging features
+            debug_level="DEBUG",
+            save_snapshot_interval=0,
+            enable_sanity_checks=True,
+            dry_run_mode=False
         )
         
         # Create mock molecular system
@@ -279,6 +284,187 @@ class TestSimulationEngine:
         assert len(self.engine.energy_trajectory) == 1
         assert 'coherence_lifetime' in self.engine.coherence_trajectory
         assert 'purity' in self.engine.coherence_trajectory
+    
+    def test_dry_run_validation_success(self):
+        """Test successful dry-run validation."""
+        # Mock all required components for dry-run
+        with patch('qbes.simulation_engine.ConfigurationManager') as mock_config_manager, \
+             patch('qbes.simulation_engine.MDEngine') as mock_md_engine, \
+             patch('qbes.simulation_engine.NoiseModelFactory') as mock_noise_factory:
+            
+            # Setup mocks
+            mock_config_manager_instance = Mock()
+            mock_config_manager.return_value = mock_config_manager_instance
+            mock_config_manager_instance.validate_parameters.return_value = ValidationResult(is_valid=True)
+            mock_config_manager_instance.parse_pdb.return_value = self.mock_molecular_system
+            mock_config_manager_instance.identify_quantum_subsystem.return_value = self.mock_quantum_subsystem
+            
+            mock_md_engine_instance = Mock()
+            mock_md_engine.return_value = mock_md_engine_instance
+            mock_md_engine_instance.initialize_system.return_value = self.mock_molecular_system
+            mock_md_engine_instance.setup_environment.return_value = True
+            
+            mock_noise_factory_instance = Mock()
+            mock_noise_factory.return_value = mock_noise_factory_instance
+            mock_noise_model = Mock()
+            mock_noise_factory_instance.create_noise_model.return_value = mock_noise_model
+            
+            # Set dry-run mode
+            dry_run_config = SimulationConfig(
+                system_pdb="test_system.pdb",
+                temperature=300.0,
+                simulation_time=1.0,
+                time_step=0.1,
+                quantum_subsystem_selection="residue 1",
+                noise_model_type="protein",
+                output_directory=self.temp_dir,
+                dry_run_mode=True
+            )
+            
+            # Test dry-run validation
+            result = self.engine.perform_dry_run_validation(dry_run_config)
+            
+            assert result.is_valid
+            assert "Dry-run validation completed successfully" in str(result)
+    
+    def test_dry_run_validation_failure(self):
+        """Test dry-run validation with configuration errors."""
+        # Create invalid config (missing required fields)
+        invalid_config = SimulationConfig(
+            system_pdb="nonexistent.pdb",
+            temperature=-100.0,  # Invalid temperature
+            simulation_time=1.0,
+            time_step=0.1,
+            quantum_subsystem_selection="invalid selection",
+            noise_model_type="invalid",
+            output_directory="/invalid/path",
+            dry_run_mode=True
+        )
+        
+        # Test dry-run validation
+        result = self.engine.perform_dry_run_validation(invalid_config)
+        
+        assert not result.is_valid
+        assert len(result.errors) > 0
+    
+    @patch('qbes.simulation_engine.logging')
+    def test_sanity_checks_logging(self, mock_logging):
+        """Test sanity check logging functionality."""
+        # Setup initialized engine with DEBUG logging
+        self._setup_initialized_engine()
+        self.engine.config.enable_sanity_checks = True
+        
+        # Mock logger to capture DEBUG messages
+        mock_logger = Mock()
+        mock_logger.isEnabledFor.return_value = True
+        self.engine.logger = mock_logger
+        
+        # Create test density matrix
+        test_state = DensityMatrix(
+            matrix=np.array([[0.9, 0.1], [0.1, 0.1]]),
+            basis_labels=["ground", "excited"],
+            time=0.1
+        )
+        
+        # Test sanity checks logging
+        self.engine._log_sanity_checks(test_state, 10, "test-phase")
+        
+        # Verify DEBUG logging was called
+        mock_logger.debug.assert_called()
+        
+        # Check that trace validation was logged
+        debug_calls = [call.args[0] for call in mock_logger.debug.call_args_list]
+        trace_logged = any("Density Matrix Trace" in call for call in debug_calls)
+        assert trace_logged
+    
+    def test_state_snapshot_saving(self):
+        """Test state snapshot saving functionality."""
+        # Setup initialized engine
+        self._setup_initialized_engine()
+        self.engine.config.save_snapshot_interval = 5
+        
+        # Create test density matrix
+        test_state = DensityMatrix(
+            matrix=np.array([[0.9, 0.1], [0.1, 0.1]]),
+            basis_labels=["ground", "excited"],
+            time=0.5
+        )
+        
+        # Test snapshot saving
+        self.engine._save_state_snapshot(test_state, 10)
+        
+        # Verify snapshot file was created
+        snapshots_dir = os.path.join(self.temp_dir, "snapshots")
+        assert os.path.exists(snapshots_dir)
+        
+        snapshot_file = os.path.join(snapshots_dir, "snapshot_step_00000010.pkl")
+        assert os.path.exists(snapshot_file)
+        
+        # Test loading the snapshot
+        loaded_data = self.engine.load_state_snapshot(snapshot_file)
+        
+        assert loaded_data['step'] == 10
+        assert loaded_data['time'] == 0.5
+        assert 'density_matrix' in loaded_data
+        assert 'purity' in loaded_data
+        assert 'trace' in loaded_data
+    
+    def test_state_snapshot_loading_nonexistent(self):
+        """Test error handling for loading nonexistent snapshot."""
+        nonexistent_path = os.path.join(self.temp_dir, "nonexistent_snapshot.pkl")
+        
+        with pytest.raises(FileNotFoundError):
+            self.engine.load_state_snapshot(nonexistent_path)
+    
+    def test_enhanced_debugging_integration(self):
+        """Test integration of enhanced debugging features during simulation."""
+        # Setup initialized engine with debugging enabled
+        self._setup_initialized_engine()
+        self.engine.config.enable_sanity_checks = True
+        self.engine.config.save_snapshot_interval = 2
+        
+        # Mock logger for DEBUG level
+        mock_logger = Mock()
+        mock_logger.isEnabledFor.return_value = True
+        self.engine.logger = mock_logger
+        
+        # Test quantum state evolution with debugging
+        self.engine._evolve_quantum_state()
+        
+        # Verify sanity checks were called
+        debug_calls = [call.args[0] for call in mock_logger.debug.call_args_list]
+        pre_evolution_logged = any("pre-evolution" in call for call in debug_calls)
+        post_evolution_logged = any("post-evolution" in call for call in debug_calls)
+        
+        assert pre_evolution_logged
+        assert post_evolution_logged
+    
+    def test_numerical_stability_monitoring(self):
+        """Test numerical stability monitoring in sanity checks."""
+        # Setup initialized engine
+        self._setup_initialized_engine()
+        self.engine.config.enable_sanity_checks = True
+        
+        # Mock logger
+        mock_logger = Mock()
+        mock_logger.isEnabledFor.return_value = True
+        self.engine.logger = mock_logger
+        
+        # Create numerically unstable state (non-Hermitian)
+        unstable_matrix = np.array([[1.0, 0.5j], [0.3j, 0.0]])  # Non-Hermitian
+        unstable_state = DensityMatrix(
+            matrix=unstable_matrix,
+            basis_labels=["ground", "excited"],
+            time=0.1
+        )
+        
+        # Test sanity checks with unstable state
+        self.engine._log_sanity_checks(unstable_state, 5, "stability-test")
+        
+        # Verify warning was logged for non-Hermitian matrix
+        warning_calls = [call.args[0] for call in mock_logger.warning.call_args_list]
+        hermiticity_warning = any("Hermiticity" in call for call in warning_calls)
+        assert hermiticity_warning
     
     def _setup_initialized_engine(self):
         """Helper method to setup an initialized engine for testing."""

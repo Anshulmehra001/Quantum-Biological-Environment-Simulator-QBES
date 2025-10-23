@@ -74,10 +74,19 @@ END
     
     def test_load_valid_config(self):
         """Test loading a valid configuration file."""
+        # Create temporary PDB file first
+        pdb_path = os.path.join(self.temp_dir, 'test.pdb')
+        with open(pdb_path, 'w') as f:
+            f.write(self.sample_pdb_content)
+        
+        # Update sample config to use the test PDB file
+        config_data = self.sample_config_data.copy()
+        config_data['system']['pdb_file'] = pdb_path
+        
         # Create temporary config file
         config_path = os.path.join(self.temp_dir, 'test_config.yaml')
         with open(config_path, 'w') as f:
-            yaml.dump(self.sample_config_data, f)
+            yaml.dump(config_data, f)
         
         # Load configuration
         config = self.config_manager.load_config(config_path)
@@ -85,7 +94,7 @@ END
         # Verify configuration
         assert isinstance(config, SimulationConfig)
         assert config.temperature == 300.0
-        assert config.system_pdb == 'test.pdb'
+        assert config.system_pdb == pdb_path
         assert config.force_field == 'amber14'
         assert config.quantum_subsystem_selection == 'chromophores'
         assert config.noise_model_type == 'protein_ohmic'
@@ -324,3 +333,73 @@ END
         # Should select HIS and CYS atoms
         assert len(active_site_atoms) == 2
         assert all(atom.residue_name in ['HIS', 'CYS'] for atom in active_site_atoms)
+    
+    def test_validate_config_method_exists(self):
+        """Test that validate_config method exists and works."""
+        config = SimulationConfig(
+            system_pdb='test.pdb',
+            temperature=300.0,
+            simulation_time=1e-12,
+            time_step=1e-15,
+            quantum_subsystem_selection='chromophores',
+            noise_model_type='protein_ohmic',
+            output_directory='./output'
+        )
+        
+        # Test that validate_config method exists
+        assert hasattr(self.config_manager, 'validate_config')
+        
+        # Test that it returns a ValidationResult
+        result = self.config_manager.validate_config(config)
+        from qbes.core.data_models import ValidationResult
+        assert isinstance(result, ValidationResult)
+    
+    def test_load_config_with_validation_errors(self):
+        """Test loading configuration with validation errors."""
+        # Create config with invalid parameters
+        invalid_config_data = {
+            'system': {
+                'pdb_file': 'test.pdb',
+                'force_field': 'amber14'
+            },
+            'simulation': {
+                'temperature': -100.0,  # Invalid negative temperature
+                'simulation_time': 1e-15,
+                'time_step': 1e-12  # Time step larger than simulation time
+            },
+            'quantum_subsystem': {
+                'selection_method': 'invalid_method'  # Invalid selection method
+            },
+            'noise_model': {
+                'type': 'invalid_noise'  # Invalid noise model
+            }
+        }
+        
+        config_path = os.path.join(self.temp_dir, 'invalid_config.yaml')
+        with open(config_path, 'w') as f:
+            yaml.dump(invalid_config_data, f)
+        
+        # Should raise ValueError due to validation errors
+        with pytest.raises(ValueError, match="Invalid configuration parameters"):
+            self.config_manager.load_config(config_path)
+    
+    def test_load_config_comprehensive_logging(self):
+        """Test that load_config provides comprehensive logging."""
+        config_path = os.path.join(self.temp_dir, 'test_config.yaml')
+        with open(config_path, 'w') as f:
+            yaml.dump(self.sample_config_data, f)
+        
+        # Create dummy PDB file
+        pdb_path = os.path.join(self.temp_dir, 'test.pdb')
+        with open(pdb_path, 'w') as f:
+            f.write(self.sample_pdb_content)
+        
+        # Update config to use the test PDB file
+        self.sample_config_data['system']['pdb_file'] = pdb_path
+        with open(config_path, 'w') as f:
+            yaml.dump(self.sample_config_data, f)
+        
+        # Load config and verify it works
+        config = self.config_manager.load_config(config_path)
+        assert isinstance(config, SimulationConfig)
+        assert config.system_pdb == pdb_path

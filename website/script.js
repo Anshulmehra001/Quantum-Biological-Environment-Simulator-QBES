@@ -297,18 +297,49 @@ function runDemo() {
     button.innerHTML = '<div class="loading"></div> Running...';
     button.disabled = true;
     
-    // Simulate calculation time
-    setTimeout(() => {
-        // Run local calculation (standalone version)
+    // Get current parameters
+    const energyGap = parseFloat(document.getElementById('energy-gap').value);
+    const coupling = parseFloat(document.getElementById('coupling').value);
+    const temperature = parseFloat(document.getElementById('temperature').value);
+    const noiseType = document.getElementById('noise-type').value;
+    
+    // Try to run real simulation via API
+    fetch('/api/demo/simulate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            energy_gap: energyGap,
+            coupling: coupling,
+            temperature: temperature,
+            noise_type: noiseType
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update results with real data
+            updateDemoResultsFromAPI(data.results);
+            
+            // Show success message with mode info
+            const mode = data.qbes_mode === 'full' ? 'Full QBES' : 'Demo Mode';
+            showNotification(`Simulation completed successfully! (${mode})`, 'success');
+        } else {
+            throw new Error(data.error || 'Simulation failed');
+        }
+    })
+    .catch(error => {
+        console.log('API failed, falling back to local calculation:', error);
+        // Fallback to local calculation
         updateDemoResults();
-        
+        showNotification('Simulation completed (offline mode)', 'success');
+    })
+    .finally(() => {
         // Reset button
         button.innerHTML = originalText;
         button.disabled = false;
-        
-        // Show success message
-        showNotification('Simulation completed successfully!', 'success');
-    }, 2000);
+    });
 }
 
 function updateDemoResultsFromAPI(results) {
@@ -352,30 +383,84 @@ function initializeTestingSystem() {
 }
 
 function loadProjectStatus() {
-    // Static project data for standalone website
-    const staticStats = {
-        statistics: {
-            python_files: 64,
-            test_files: 27,
-            documentation_files: 16,
-            total_lines: 26000
-        },
-        grade: 'A-'
-    };
-    
-    updateProjectStatistics(staticStats);
+    // Try to load real project status from API
+    fetch('/api/status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateProjectStatistics(data);
+                
+                // Update QBES status indicator
+                const statusIndicator = document.querySelector('.qbes-status');
+                if (statusIndicator) {
+                    const status = data.qbes_status === 'available' ? 'Full QBES Available' : 'Demo Mode';
+                    statusIndicator.textContent = status;
+                    statusIndicator.className = `qbes-status ${data.qbes_status}`;
+                }
+            } else {
+                throw new Error('Failed to load status');
+            }
+        })
+        .catch(error => {
+            console.log('API failed, using static data:', error);
+            // Fallback to static data
+            const staticStats = {
+                statistics: {
+                    python_files: 64,
+                    test_files: 27,
+                    documentation_files: 16,
+                    total_lines: 18000
+                },
+                grade: 'A-'
+            };
+            updateProjectStatistics(staticStats);
+        });
 }
 
 function updateProjectStatistics(stats) {
-    // Update statistics in the project section if available
+    // Update statistics with specific IDs
     if (stats.statistics) {
-        const statElements = document.querySelectorAll('.stat-number');
-        if (statElements.length >= 4) {
-            statElements[0].textContent = stats.statistics.python_files || '64';
-            statElements[1].textContent = stats.statistics.test_files || '27';
-            statElements[2].textContent = stats.statistics.documentation_files || '16';
-            statElements[3].textContent = stats.grade || 'A-';
+        // Update hero stats
+        const linesElement = document.getElementById('lines-of-code');
+        if (linesElement) {
+            const lines = stats.statistics.total_lines;
+            linesElement.textContent = lines > 1000 ? `${Math.round(lines/1000)}K+` : `${lines}+`;
         }
+        
+        const gradeElement = document.getElementById('project-grade');
+        if (gradeElement) {
+            gradeElement.textContent = stats.grade || 'A-';
+        }
+        
+        // Update project section stats
+        const pythonFilesElement = document.getElementById('python-files');
+        if (pythonFilesElement) {
+            pythonFilesElement.textContent = stats.statistics.python_files || '64';
+        }
+        
+        const testFilesElement = document.getElementById('test-files');
+        if (testFilesElement) {
+            testFilesElement.textContent = stats.statistics.test_files || '27';
+        }
+        
+        const docFilesElement = document.getElementById('doc-files');
+        if (docFilesElement) {
+            docFilesElement.textContent = stats.statistics.documentation_files || '16';
+        }
+        
+        const totalLinesElement = document.getElementById('total-lines');
+        if (totalLinesElement) {
+            const lines = stats.statistics.total_lines;
+            totalLinesElement.textContent = lines > 1000 ? `${Math.round(lines/1000)}K+` : `${lines}+`;
+        }
+    }
+    
+    // Update QBES status
+    const statusElement = document.getElementById('qbes-status');
+    if (statusElement) {
+        const status = stats.qbes_status === 'available' ? 'Full' : 'Demo';
+        statusElement.textContent = status;
+        statusElement.className = `qbes-status ${stats.qbes_status || 'demo_mode'}`;
     }
 }
 
@@ -391,8 +476,30 @@ function runTest(testType) {
     // Clear console
     console.innerHTML = '<div class="console-line">Starting ' + testType + ' tests...</div>';
     
-    // Run simulated tests (standalone version)
-    runSimulatedTest(testType, console, button, originalText);
+    // Try to run real tests via API
+    fetch('/api/test/run', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            test_type: testType
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Start polling for test results
+            pollTestResults(data.test_id, console, button, originalText, testType);
+        } else {
+            throw new Error(data.error || 'Failed to start tests');
+        }
+    })
+    .catch(error => {
+        console.log('API failed, falling back to simulated tests:', error);
+        // Fallback to simulated tests
+        runSimulatedTest(testType, console, button, originalText);
+    });
 }
 
 async function pollTestResults(testId, console, button, originalText, testType) {

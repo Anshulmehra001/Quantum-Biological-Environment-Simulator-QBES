@@ -1,0 +1,54 @@
+# QBES Configuration - Water Box Example
+# Simple system for learning basic quantum coherence concepts
+
+system:
+  pdb_file: "system.pdb"
+  force_field: "tip3p"                    # Water-specific force field
+  solvent_model: "tip3p"                  # Explicit water model
+  ionic_strength: 0.0                     # Pure water (no ions)
+  temperature: 300.0                      # Room temperature (K)
+
+simulation:
+  simulation_time: 1.0e-12               # 1 picosecond
+  time_step: 1.0e-15                     # 1 femtosecond
+  integration_method: "runge_kutta"       # Stable integration
+  temperature_coupling: "langevin"        # Temperature control
+  constraint_tolerance: 1.0e-6            # Numerical precision
+  nonbonded_cutoff: 8.0                  # Interaction cutoff (Å)
+
+quantum_subsystem:
+  selection_method: "custom"              # Custom atom selection
+  custom_selection: "resid 1 2"          # First 2 water molecules
+  max_quantum_atoms: 6                   # 2 water molecules = 6 atoms
+  include_environment: true               # Include nearby classical atoms
+  environment_radius: 5.0                # Include atoms within 5 Å
+  basis_set: "minimal"                   # Simple basis for speed
+
+noise_model:
+  type: "solvent_ionic"                  # Aqueous environment noise
+  coupling_strength: 1.0                 # Moderate coupling
+  cutoff_frequency: 2.0e13              # 20 THz cutoff
+  reorganization_energy: 35.0           # 35 cm⁻¹ (typical for water)
+  temperature: 300.0                     # Environment temperature
+  correlation_time: 1.0e-13             # 100 fs correlation time
+  include_vibrational_modes: true       # Include molecular vibrations
+
+output:
+  directory: "./results"                 # Output directory
+  save_trajectory: true                  # Save quantum state evolution
+  save_checkpoints: true                # Enable checkpoints
+  checkpoint_interval: 1000             # Checkpoint every 1000 steps
+  save_intermediate: true               # Save intermediate results
+  intermediate_interval: 100            # Every 100 steps
+  plot_format: "png"                    # PNG plots
+  plot_dpi: 300                         # High resolution
+  generate_movies: false                # No animations (for speed)
+  analysis_level: "standard"            # Standard analysis detail
+
+# Analysis settings (optional)
+analysis:
+  calculate_coherence_measures: true     # Coherence analysis
+  calculate_entanglement: false         # Skip entanglement (simple system)
+  calculate_energy_transfer: false      # No energy transfer in water
+  hydrogen_bond_analysis: true          # Analyze H-bonds
+  radial_distribution: true             # Water structure analysis

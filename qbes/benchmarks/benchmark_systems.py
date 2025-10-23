@@ -528,6 +528,19 @@ class BenchmarkRunner:
         
         return self.results
     
+    def run_benchmarks(self, final_time: float = 1.0, time_step: float = 0.01) -> List[BenchmarkResult]:
+        """
+        Alias for run_all_benchmarks method for backward compatibility.
+        
+        Args:
+            final_time: Final simulation time for all tests
+            time_step: Time step for evolution
+            
+        Returns:
+            List of benchmark results
+        """
+        return self.run_all_benchmarks(final_time, time_step)
+    
     def generate_report(self) -> str:
         """Generate a comprehensive benchmark report."""
         if not self.results:

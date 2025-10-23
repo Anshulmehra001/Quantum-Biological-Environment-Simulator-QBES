@@ -41,12 +41,14 @@ mpi4py>=3.1.0
 # Optional GPU acceleration (commented out by default)
 # cupy>=9.0.0
 
-# Development and testing dependencies (optional)
-# pytest>=6.0.0
-# pytest-cov>=2.0.0
-# black>=21.0.0
-# flake8>=3.8.0
-# mypy>=0.800
+# Development and testing dependencies
+pytest>=6.0.0
+pytest-cov>=2.0.0
+pytest-xdist>=2.0.0
+pytest-timeout>=1.4.0
+black>=21.0.0
+flake8>=3.8.0
+mypy>=0.800
 
 # Documentation dependencies (optional)
 # sphinx>=4.0.0

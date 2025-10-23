@@ -1,0 +1,65 @@
+# QBES Configuration - Benzene Example
+# Aromatic π-electron system for understanding quantum delocalization
+
+system:
+  pdb_file: "system.pdb"
+  force_field: "gaff"                     # General Amber Force Field for organics
+  solvent_model: null                     # Vacuum simulation
+  ionic_strength: 0.0                     # No solvent
+  temperature: 300.0                      # Room temperature (K)
+
+simulation:
+  simulation_time: 2.0e-12               # 2 picoseconds
+  time_step: 1.0e-15                     # 1 femtosecond
+  integration_method: "runge_kutta"       # Stable integration
+  temperature_coupling: "langevin"        # Temperature control
+  constraint_tolerance: 1.0e-6            # Numerical precision
+  nonbonded_cutoff: 15.0                 # Large cutoff for vacuum
+
+quantum_subsystem:
+  selection_method: "custom"              # Custom atom selection
+  custom_selection: "element C"           # All carbon atoms (π-system)
+  max_quantum_atoms: 6                   # 6 carbon atoms in benzene ring
+  include_environment: true               # Include hydrogen atoms
+  environment_radius: 3.0                # Include atoms within 3 Å
+  basis_set: "minimal"                   # Simple basis for π-electrons
+  electronic_structure: "pi_system"      # Focus on π-electrons
+
+noise_model:
+  type: "custom"                         # Custom for isolated molecule
+  coupling_strength: 0.5                 # Weak coupling (vacuum)
+  cutoff_frequency: 5.0e13              # 50 THz cutoff
+  reorganization_energy: 15.0           # 15 cm⁻¹ (lower than condensed phase)
+  temperature: 300.0                     # Environment temperature
+  correlation_time: 5.0e-13             # 500 fs correlation time
+  include_vibrational_modes: true       # Include molecular vibrations
+  vibrational_coupling: 1.0             # Moderate vibrational coupling
+
+output:
+  directory: "./results"                 # Output directory
+  save_trajectory: true                  # Save quantum state evolution
+  save_checkpoints: true                # Enable checkpoints
+  checkpoint_interval: 1000             # Checkpoint every 1000 steps
+  save_intermediate: true               # Save intermediate results
+  intermediate_interval: 200            # Every 200 steps
+  plot_format: "png"                    # PNG plots
+  plot_dpi: 300                         # High resolution
+  generate_movies: false                # No animations (for speed)
+  analysis_level: "detailed"            # Detailed analysis
+
+# Analysis settings
+analysis:
+  calculate_coherence_measures: true     # Coherence analysis
+  calculate_entanglement: false         # Skip entanglement (simple system)
+  calculate_energy_transfer: false      # No energy transfer
+  electronic_structure_analysis: true   # Analyze π-system
+  vibrational_analysis: true            # Analyze vibrational modes
+  symmetry_analysis: true               # Benzene symmetry analysis
+  
+# Electronic structure settings
+electronic_structure:
+  method: "semi_empirical"              # Fast electronic structure
+  basis_set: "minimal"                  # Minimal basis for speed
+  include_correlation: false            # Skip electron correlation
+  excited_states: 3                     # Include first 3 excited states
+  oscillator_strengths: true            # Calculate transition strengths

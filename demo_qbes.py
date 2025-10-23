@@ -102,8 +102,12 @@ def demo_qbes_capabilities():
         try:
             from qbes.benchmarks import BenchmarkRunner
             runner = BenchmarkRunner()
-            print(f"✅ Benchmark runner initialized with {len(runner.benchmarks)} benchmarks")
-        except ImportError as e:
+            print(f"✅ Benchmark runner initialized successfully")
+            
+            # Test validation suite
+            results = runner.run_validation_suite("quick")
+            print(f"✅ Validation suite completed with {len(results.individual_results)} tests")
+        except Exception as e:
             print(f"⚠️  Benchmark system not fully available: {e}")
         
         # 7. Command Line Interface

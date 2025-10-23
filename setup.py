@@ -23,13 +23,14 @@ def read_requirements():
 
 setup(
     name="qbes",
-    version="0.1.0",
-    author="QBES Development Team",
-    author_email="qbes@example.com",
+    version="1.2.0-dev",
+    author="Aniket Mehra",
+    author_email="aniketmehra715@gmail.com",
     description="Quantum Biological Environment Simulator - A toolkit for simulating quantum mechanics in biological systems",
     long_description=read_readme(),
     long_description_content_type="text/markdown",
-    url="https://github.com/qbes-team/qbes",
+    url="https://github.com/Anshulmehra001/Quantum-Biological-Environment-Simulator-QBES-",
+    license="CC BY-NC-SA 4.0",
     packages=find_packages(exclude=['tests*']),
     classifiers=[
         "Development Status :: 3 - Alpha",
@@ -37,7 +38,7 @@ setup(
         "Topic :: Scientific/Engineering :: Physics",
         "Topic :: Scientific/Engineering :: Chemistry", 
         "Topic :: Scientific/Engineering :: Bio-Informatics",
-        "License :: OSI Approved :: MIT License",
+        "License :: Other/Proprietary License",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",

@@ -32,10 +32,17 @@ class ConfigurationManager(ConfigurationManagerInterface):
         self.validation_utils = ValidationUtils()
     
     def load_config(self, config_path: str) -> SimulationConfig:
-        """Load configuration from YAML file."""
+        """Load configuration from YAML file with comprehensive error handling."""
         try:
+            print(f"Loading configuration from: {config_path}")
+            
             with open(config_path, 'r') as file:
                 config_data = yaml.safe_load(file)
+            
+            if not config_data:
+                raise ValueError("Configuration file is empty or contains no valid YAML data")
+            
+            print(f"Successfully parsed YAML configuration")
             
             # Extract configuration parameters from nested YAML structure
             system_config = config_data.get('system', {})
@@ -44,29 +51,62 @@ class ConfigurationManager(ConfigurationManagerInterface):
             noise_config = config_data.get('noise_model', {})
             output_config = config_data.get('output', {})
             
-            # Create SimulationConfig object
-            config = SimulationConfig(
-                system_pdb=system_config.get('pdb_file', 'system.pdb'),
-                temperature=sim_config.get('temperature', 300.0),
-                simulation_time=sim_config.get('simulation_time', 1e-12),
-                time_step=sim_config.get('time_step', 1e-15),
-                quantum_subsystem_selection=quantum_config.get('selection_method', 'chromophores'),
-                noise_model_type=noise_config.get('type', 'protein_ohmic'),
-                output_directory=output_config.get('directory', './qbes_output'),
-                force_field=system_config.get('force_field', 'amber14'),
-                solvent_model=system_config.get('solvent_model', 'tip3p'),
-                ionic_strength=system_config.get('ionic_strength', 0.15)
-            )
+            print(f"Extracted configuration sections: system={bool(system_config)}, simulation={bool(sim_config)}")
             
-            self.current_config = config
-            return config
+            # Create SimulationConfig object with validation
+            try:
+                config = SimulationConfig(
+                    system_pdb=system_config.get('pdb_file', 'system.pdb'),
+                    temperature=sim_config.get('temperature', 300.0),
+                    simulation_time=sim_config.get('simulation_time', 1e-12),
+                    time_step=sim_config.get('time_step', 1e-15),
+                    quantum_subsystem_selection=quantum_config.get('selection_method', 'chromophores'),
+                    noise_model_type=noise_config.get('type', 'protein_ohmic'),
+                    output_directory=output_config.get('directory', './qbes_output'),
+                    force_field=system_config.get('force_field', 'amber14'),
+                    solvent_model=system_config.get('solvent_model', 'tip3p'),
+                    ionic_strength=system_config.get('ionic_strength', 0.15)
+                )
+                print(f"Successfully created SimulationConfig object")
+                
+                # Validate the configuration
+                validation_result = self.validate_parameters(config)
+                if not validation_result.is_valid:
+                    error_msg = f"Configuration validation failed: {'; '.join(validation_result.errors)}"
+                    print(f"Validation errors: {error_msg}")
+                    raise ValueError(error_msg)
+                
+                if validation_result.warnings:
+                    print(f"Configuration warnings: {'; '.join(validation_result.warnings)}")
+                
+                self.current_config = config
+                print(f"Configuration loaded and validated successfully")
+                return config
+                
+            except Exception as config_error:
+                print(f"Error creating SimulationConfig: {config_error}")
+                raise ValueError(f"Invalid configuration parameters: {config_error}")
             
-        except FileNotFoundError:
-            raise FileNotFoundError(f"Configuration file not found: {config_path}")
+        except FileNotFoundError as e:
+            error_msg = f"Configuration file not found: {config_path}. Please check the file path and ensure the file exists."
+            print(f"File error: {error_msg}")
+            raise FileNotFoundError(error_msg)
         except yaml.YAMLError as e:
-            raise ValueError(f"Error parsing YAML configuration: {e}")
+            error_msg = f"Error parsing YAML configuration: {e}. Please check the YAML syntax."
+            print(f"YAML error: {error_msg}")
+            raise ValueError(error_msg)
+        except ValueError as e:
+            # Re-raise validation errors with context
+            print(f"Validation error: {e}")
+            raise
         except Exception as e:
-            raise RuntimeError(f"Error loading configuration: {e}")
+            error_msg = f"Unexpected error loading configuration: {e}"
+            print(f"Unexpected error: {error_msg}")
+            raise RuntimeError(error_msg)
+    
+    def validate_config(self, config: SimulationConfig) -> ValidationResult:
+        """Validate configuration - alias for validate_parameters for backward compatibility."""
+        return self.validate_parameters(config)
     
     def validate_parameters(self, config: SimulationConfig) -> ValidationResult:
         """Validate all configuration parameters against physical constraints."""

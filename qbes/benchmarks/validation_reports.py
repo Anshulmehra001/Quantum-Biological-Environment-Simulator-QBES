@@ -18,32 +18,87 @@ from .statistical_testing import StatisticalTester, ComprehensiveStatisticalRepo
 from .benchmark_systems import BenchmarkRunner, BenchmarkResult
 
 
-@dataclass
 class ValidationSummary:
     """Summary of all validation results."""
-    timestamp: str
-    qbes_version: str
     
-    # Benchmark results
-    benchmark_tests_total: int
-    benchmark_tests_passed: int
-    benchmark_success_rate: float
+    def __init__(self, timestamp: str = None, qbes_version: str = "1.1.0",
+                 benchmark_tests_total: int = 0, benchmark_tests_passed: int = 0, benchmark_success_rate: float = 0.0,
+                 literature_validations_total: int = 0, literature_validations_passed: int = 0, literature_success_rate: float = 0.0,
+                 cross_validations_total: int = 0, cross_validations_passed: int = 0, cross_validation_success_rate: float = 0.0,
+                 overall_validation_score: float = 0.0, validation_grade: str = "F",
+                 critical_issues: List[str] = None, recommendations: List[str] = None,
+                 # Legacy parameters for backward compatibility
+                 benchmark_score: float = None, literature_score: float = None, 
+                 cross_validation_score: float = None, statistical_score: float = None):
+        """Initialize ValidationSummary with support for both new and legacy parameter formats."""
+        
+        # Handle legacy parameters if provided
+        if any(param is not None for param in [benchmark_score, literature_score, cross_validation_score, statistical_score]):
+            self._init_from_legacy_params(benchmark_score or 0.0, literature_score or 0.0, 
+                                        cross_validation_score or 0.0, statistical_score or 0.0)
+        else:
+            # Use new parameter format
+            self.timestamp = timestamp or datetime.now().isoformat()
+            self.qbes_version = qbes_version
+            self.benchmark_tests_total = benchmark_tests_total
+            self.benchmark_tests_passed = benchmark_tests_passed
+            self.benchmark_success_rate = benchmark_success_rate
+            self.literature_validations_total = literature_validations_total
+            self.literature_validations_passed = literature_validations_passed
+            self.literature_success_rate = literature_success_rate
+            self.cross_validations_total = cross_validations_total
+            self.cross_validations_passed = cross_validations_passed
+            self.cross_validation_success_rate = cross_validation_score
+            self.overall_validation_score = overall_validation_score
+            self.validation_grade = validation_grade
+            self.critical_issues = critical_issues or []
+            self.recommendations = recommendations or []
     
-    # Literature validation
-    literature_validations_total: int
-    literature_validations_passed: int
-    literature_success_rate: float
-    
-    # Cross-validation
-    cross_validations_total: int
-    cross_validations_passed: int
-    cross_validation_success_rate: float
-    
-    # Overall assessment
-    overall_validation_score: float
-    validation_grade: str
-    critical_issues: List[str]
-    recommendations: List[str]
+    def _init_from_legacy_params(self, benchmark_score: float, literature_score: float, 
+                               cross_validation_score: float, statistical_score: float):
+        """Initialize from legacy parameter format for backward compatibility."""
+        # Calculate overall score from individual scores
+        scores = [benchmark_score, literature_score, cross_validation_score, statistical_score]
+        overall_score = sum(scores) / len(scores) if scores else 0.0
+        
+        # Determine grade based on overall score
+        if overall_score >= 0.9:
+            grade = "A"
+        elif overall_score >= 0.8:
+            grade = "B"
+        elif overall_score >= 0.7:
+            grade = "C"
+        elif overall_score >= 0.6:
+            grade = "D"
+        else:
+            grade = "F"
+        
+        # Convert scores to counts (assuming 10 tests each for simplicity)
+        benchmark_total = 10
+        benchmark_passed = int(benchmark_score * benchmark_total)
+        
+        literature_total = 10
+        literature_passed = int(literature_score * literature_total)
+        
+        cross_validation_total = 10
+        cross_validation_passed = int(cross_validation_score * cross_validation_total)
+        
+        # Set all attributes
+        self.timestamp = datetime.now().isoformat()
+        self.qbes_version = "1.1.0"
+        self.benchmark_tests_total = benchmark_total
+        self.benchmark_tests_passed = benchmark_passed
+        self.benchmark_success_rate = benchmark_score
+        self.literature_validations_total = literature_total
+        self.literature_validations_passed = literature_passed
+        self.literature_success_rate = literature_score
+        self.cross_validations_total = cross_validation_total
+        self.cross_validations_passed = cross_validation_passed
+        self.cross_validation_success_rate = cross_validation_score
+        self.overall_validation_score = overall_score
+        self.validation_grade = grade
+        self.critical_issues = []
+        self.recommendations = []
 
 
 class ComprehensiveValidationReporter:
@@ -545,3 +600,138 @@ def run_comprehensive_validation(output_dir: str = "validation_reports") -> Vali
     print(f"\nDetailed reports available in: {output_dir}")
     
     return summary
+
+class ValidationReportGenerator:
+    """Simple validation report generator for CLI validate command."""
+    
+    def generate_markdown_report(self, results: List[Any], output_file: str):
+        """Generate markdown validation report."""
+        lines = []
+        
+        # Header
+        lines.append("# QBES Validation Report")
+        lines.append("")
+        lines.append(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        lines.append(f"**QBES Version:** 1.2.0")
+        lines.append("")
+        
+        # Summary
+        total_tests = len(results)
+        passed_tests = sum(1 for r in results if getattr(r, 'test_passed', False))
+        success_rate = (passed_tests / total_tests) * 100 if total_tests > 0 else 0
+        
+        lines.append("## Summary")
+        lines.append("")
+        lines.append(f"- **Total Tests:** {total_tests}")
+        lines.append(f"- **Passed:** {passed_tests}")
+        lines.append(f"- **Failed:** {total_tests - passed_tests}")
+        lines.append(f"- **Success Rate:** {success_rate:.1f}%")
+        lines.append("")
+        
+        # Test Results
+        lines.append("## Test Results")
+        lines.append("")
+        
+        for result in results:
+            test_passed = getattr(result, 'test_passed', False)
+            system_name = getattr(result, 'system_name', 'Unknown Test')
+            status = "✅ PASS" if test_passed else "❌ FAIL"
+            
+            lines.append(f"### {system_name}")
+            lines.append(f"**Status:** {status}")
+            
+            # Add specific metrics based on result type
+            if hasattr(result, 'relative_error'):
+                lines.append(f"**Relative Error:** {result.relative_error:.2e}")
+            if hasattr(result, 'computation_time'):
+                lines.append(f"**Computation Time:** {result.computation_time:.3f}s")
+            if hasattr(result, 'coherence_error'):
+                lines.append(f"**Coherence Error:** {result.coherence_error:.1%}")
+            if hasattr(result, 'efficiency_error'):
+                lines.append(f"**Efficiency Error:** {result.efficiency_error:.1%}")
+            if hasattr(result, 'temperature'):
+                lines.append(f"**Temperature:** {result.temperature}K")
+            if hasattr(result, 'error_message') and result.error_message:
+                lines.append(f"**Error:** {result.error_message}")
+            
+            lines.append("")
+        
+        # Write to file
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(lines))
+    
+    def generate_json_report(self, results: List[Any], output_file: str):
+        """Generate JSON validation report."""
+        report_data = {
+            'timestamp': datetime.now().isoformat(),
+            'qbes_version': '1.2.0',
+            'summary': {
+                'total_tests': len(results),
+                'passed_tests': sum(1 for r in results if getattr(r, 'test_passed', False)),
+                'failed_tests': sum(1 for r in results if not getattr(r, 'test_passed', False)),
+                'success_rate': (sum(1 for r in results if getattr(r, 'test_passed', False)) / len(results)) * 100 if results else 0
+            },
+            'results': []
+        }
+        
+        for result in results:
+            result_dict = {}
+            
+            # Extract common attributes
+            for attr in ['system_name', 'test_passed', 'relative_error', 'computation_time',
+                        'coherence_error', 'efficiency_error', 'temperature', 'error_message']:
+                if hasattr(result, attr):
+                    value = getattr(result, attr)
+                    if value is not None:
+                        result_dict[attr] = value
+            
+            report_data['results'].append(result_dict)
+        
+        with open(output_file, 'w') as f:
+            json.dump(report_data, f, indent=2, default=str)
+    
+    def generate_text_report(self, results: List[Any], output_file: str):
+        """Generate plain text validation report."""
+        lines = []
+        
+        # Header
+        lines.append("QBES VALIDATION REPORT")
+        lines.append("=" * 50)
+        lines.append(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        lines.append(f"QBES Version: 1.2.0")
+        lines.append("")
+        
+        # Summary
+        total_tests = len(results)
+        passed_tests = sum(1 for r in results if getattr(r, 'test_passed', False))
+        success_rate = (passed_tests / total_tests) * 100 if total_tests > 0 else 0
+        
+        lines.append("SUMMARY")
+        lines.append("-" * 20)
+        lines.append(f"Total Tests:  {total_tests}")
+        lines.append(f"Passed:       {passed_tests}")
+        lines.append(f"Failed:       {total_tests - passed_tests}")
+        lines.append(f"Success Rate: {success_rate:.1f}%")
+        lines.append("")
+        
+        # Test Results
+        lines.append("TEST RESULTS")
+        lines.append("-" * 20)
+        
+        for result in results:
+            test_passed = getattr(result, 'test_passed', False)
+            system_name = getattr(result, 'system_name', 'Unknown Test')
+            status = "PASS" if test_passed else "FAIL"
+            
+            lines.append(f"{system_name}: {status}")
+            
+            if hasattr(result, 'relative_error'):
+                lines.append(f"  Relative Error: {result.relative_error:.2e}")
+            if hasattr(result, 'computation_time'):
+                lines.append(f"  Computation Time: {result.computation_time:.3f}s")
+            if hasattr(result, 'error_message') and result.error_message:
+                lines.append(f"  Error: {result.error_message}")
+            lines.append("")
+        
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(lines))

@@ -21,6 +21,11 @@ class SimulationConfig:
     force_field: str = "amber14"
     solvent_model: str = "tip3p"
     ionic_strength: float = 0.15
+    # Enhanced debugging parameters
+    debug_level: str = "INFO"
+    save_snapshot_interval: int = 0  # 0 = disabled, >0 = save every N steps
+    enable_sanity_checks: bool = True
+    dry_run_mode: bool = False
     
     def __post_init__(self):
         """Validate configuration parameters."""
@@ -30,6 +35,10 @@ class SimulationConfig:
             raise ValueError("Simulation time must be positive")
         if self.time_step <= 0:
             raise ValueError("Time step must be positive")
+        if self.debug_level not in ["DEBUG", "INFO", "WARNING", "ERROR"]:
+            raise ValueError("debug_level must be one of: DEBUG, INFO, WARNING, ERROR")
+        if self.save_snapshot_interval < 0:
+            raise ValueError("save_snapshot_interval must be non-negative")
 
 
 @dataclass
@@ -191,6 +200,163 @@ class SimulationResults:
             raise ValueError("State trajectory cannot be empty")
         if len(self.energy_trajectory) != len(self.state_trajectory):
             raise ValueError("Energy trajectory length must match state trajectory")
+    
+    def format_summary_table(self, save_to_file: Optional[str] = None) -> str:
+        """
+        Format results as terminal-friendly table showing key results.
+        
+        Args:
+            save_to_file: Optional path to save the summary table as text file
+            
+        Returns:
+            str: Formatted summary table as string
+        """
+        import math
+        
+        # Calculate key metrics
+        final_state = self.state_trajectory[-1] if self.state_trajectory else None
+        final_energy = self.energy_trajectory[-1] if self.energy_trajectory else None
+        
+        # Calculate purity from final state
+        purity = None
+        if final_state:
+            eigenvals = np.abs(np.diag(final_state.matrix))
+            purity = np.sum(eigenvals**2)
+        
+        # Estimate coherence lifetime
+        coherence_lifetime = None
+        if 'purity' in self.coherence_measures and len(self.coherence_measures['purity']) > 1:
+            purity_data = self.coherence_measures['purity']
+            coherence_lifetime = self._estimate_coherence_lifetime(purity_data)
+        
+        # Get decoherence rate
+        total_decoherence_rate = None
+        if self.decoherence_rates:
+            total_decoherence_rate = self.decoherence_rates.get('total', 
+                                   sum(self.decoherence_rates.values()))
+        
+        # Energy conservation check
+        energy_conservation_error = None
+        if len(self.energy_trajectory) > 1:
+            initial_energy = self.energy_trajectory[0]
+            final_energy_val = self.energy_trajectory[-1]
+            energy_conservation_error = abs(final_energy_val - initial_energy) / abs(initial_energy)
+        
+        # Build summary table
+        table_lines = []
+        table_lines.append("=" * 70)
+        table_lines.append("QUANTUM BIOLOGICAL SIMULATION RESULTS SUMMARY")
+        table_lines.append("=" * 70)
+        table_lines.append("")
+        
+        # System information
+        table_lines.append("SYSTEM CONFIGURATION")
+        table_lines.append("-" * 20)
+        table_lines.append(f"  PDB File                : {self.simulation_config.system_pdb}")
+        table_lines.append(f"  Temperature             : {self.simulation_config.temperature:.1f} K")
+        table_lines.append(f"  Force Field             : {self.simulation_config.force_field}")
+        table_lines.append(f"  Quantum Selection       : {self.simulation_config.quantum_subsystem_selection}")
+        table_lines.append(f"  Noise Model             : {self.simulation_config.noise_model_type}")
+        table_lines.append("")
+        
+        # Simulation parameters
+        table_lines.append("SIMULATION PARAMETERS")
+        table_lines.append("-" * 21)
+        table_lines.append(f"  Total Time              : {self.simulation_config.simulation_time:.2e} s")
+        table_lines.append(f"  Time Step               : {self.simulation_config.time_step:.2e} s")
+        table_lines.append(f"  Total Steps             : {len(self.state_trajectory):,}")
+        table_lines.append(f"  Computation Time        : {self.computation_time:.2f} s")
+        table_lines.append("")
+        
+        # Key results
+        table_lines.append("KEY RESULTS")
+        table_lines.append("-" * 11)
+        
+        if final_energy is not None:
+            table_lines.append(f"  Final Energy            : {final_energy:.6f} a.u.")
+        else:
+            table_lines.append(f"  Final Energy            : N/A")
+        
+        if purity is not None:
+            table_lines.append(f"  Final Purity            : {purity:.4f}")
+        else:
+            table_lines.append(f"  Final Purity            : N/A")
+        
+        if coherence_lifetime is not None:
+            table_lines.append(f"  Coherence Lifetime      : {coherence_lifetime:.2e} s")
+        else:
+            table_lines.append(f"  Coherence Lifetime      : N/A")
+        
+        if total_decoherence_rate is not None:
+            table_lines.append(f"  Decoherence Rate        : {total_decoherence_rate:.2e} s⁻¹")
+        else:
+            table_lines.append(f"  Decoherence Rate        : N/A")
+        
+        if energy_conservation_error is not None:
+            table_lines.append(f"  Energy Conservation Err : {energy_conservation_error:.2e}")
+        else:
+            table_lines.append(f"  Energy Conservation Err : N/A")
+        
+        table_lines.append("")
+        
+        # Statistical summary if available
+        if self.statistical_summary and self.statistical_summary.mean_values:
+            table_lines.append("STATISTICAL SUMMARY")
+            table_lines.append("-" * 19)
+            
+            for metric, mean_val in self.statistical_summary.mean_values.items():
+                std_val = self.statistical_summary.std_deviations.get(metric, 0.0)
+                table_lines.append(f"  {metric:<20} : {mean_val:.4e} ± {std_val:.4e}")
+            
+            table_lines.append(f"  Sample Size             : {self.statistical_summary.sample_size}")
+            table_lines.append("")
+        
+        # Output information
+        table_lines.append("OUTPUT")
+        table_lines.append("-" * 6)
+        table_lines.append(f"  Results Directory       : {self.simulation_config.output_directory}")
+        table_lines.append("")
+        table_lines.append("=" * 70)
+        
+        # Join all lines
+        summary_text = "\n".join(table_lines)
+        
+        # Save to file if requested
+        if save_to_file:
+            try:
+                with open(save_to_file, 'w') as f:
+                    f.write(summary_text)
+            except Exception as e:
+                print(f"Warning: Could not save summary to {save_to_file}: {e}")
+        
+        return summary_text
+    
+    def _estimate_coherence_lifetime(self, purity_data: List[float]) -> Optional[float]:
+        """Estimate coherence lifetime from purity decay."""
+        try:
+            if len(purity_data) < 2:
+                return None
+            
+            # Convert to numpy array
+            purity_array = np.array(purity_data)
+            
+            # Find 1/e decay point
+            initial_purity = purity_array[0]
+            target_purity = initial_purity / np.e
+            
+            # Find first point below target
+            below_target = np.where(purity_array <= target_purity)[0]
+            
+            if len(below_target) > 0:
+                # Estimate based on time step and position
+                time_step = self.simulation_config.time_step
+                lifetime_steps = below_target[0]
+                return lifetime_steps * time_step
+            
+            return None
+            
+        except Exception:
+            return None
 
 
 # Additional helper classes for specific components

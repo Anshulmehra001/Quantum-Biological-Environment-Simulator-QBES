@@ -1,3 +1,8 @@
+# Virtual Environment
+qbes_env/
+venv/
+env/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -125,6 +130,9 @@ dmypy.json
 # QBES specific
 qbes_output/
 benchmark_results/
+/output/
+/simulation_results/
+/benchmark_results/
 *.pdb
 *.dcd
 *.xtc

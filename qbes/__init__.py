@@ -4,7 +4,7 @@ Quantum Biological Environment Simulator (QBES)
 A scientific software toolkit for simulating quantum mechanics within noisy biological environments.
 """
 
-__version__ = "0.1.0"
+__version__ = "1.1.0"
 __author__ = "QBES Development Team"
 __email__ = "qbes@example.com"
 

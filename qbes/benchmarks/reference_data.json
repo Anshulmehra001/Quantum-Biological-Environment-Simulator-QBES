@@ -1,0 +1,137 @@
+{
+  "two_level_rabi_frequency": {
+    "value": 1.0,
+    "unit": "normalized",
+    "source": "analytical_solution",
+    "description": "Rabi frequency for a two-level system under resonant driving",
+    "tolerance": 0.001,
+    "system_parameters": {
+      "coupling_strength": 1.0,
+      "detuning": 0.0,
+      "temperature": 0.0
+    }
+  },
+  "harmonic_oscillator_ground_energy": {
+    "value": 0.5,
+    "unit": "hbar_omega",
+    "source": "analytical_solution",
+    "description": "Ground state energy of quantum harmonic oscillator",
+    "tolerance": 0.001,
+    "system_parameters": {
+      "frequency": 1.0,
+      "mass": 1.0,
+      "hbar": 1.0
+    }
+  },
+  "fmo_coherence_lifetime_fs": {
+    "value": 660.0,
+    "unit": "femtoseconds",
+    "source": "Engel et al. Nature 2007",
+    "description": "Coherence lifetime in Fenna-Matthews-Olson complex at 77K",
+    "tolerance": 0.15,
+    "system_parameters": {
+      "temperature": 77.0,
+      "num_sites": 7,
+      "reorganization_energy": 35.0
+    },
+    "reference_doi": "10.1038/nature05678",
+    "experimental_conditions": {
+      "measurement_technique": "2D_electronic_spectroscopy",
+      "sample_preparation": "isolated_FMO_complexes",
+      "buffer_conditions": "pH_8.0_Tris_buffer"
+    }
+  },
+  "fmo_energy_transfer_efficiency": {
+    "value": 0.95,
+    "unit": "dimensionless",
+    "source": "Mohseni et al. J. Chem. Phys. 2008",
+    "description": "Energy transfer efficiency in FMO complex from antenna to reaction center",
+    "tolerance": 0.05,
+    "system_parameters": {
+      "temperature": 300.0,
+      "disorder_strength": 50.0,
+      "num_sites": 7
+    },
+    "reference_doi": "10.1063/1.2838750",
+    "calculation_method": "hierarchical_equations_of_motion"
+  },
+  "fmo_site_energies_cm": {
+    "value": [12410, 12530, 12210, 12320, 12480, 12630, 12440],
+    "unit": "cm^-1",
+    "source": "Adolphs & Renger Biophys. J. 2006",
+    "description": "Site energies of 7 bacteriochlorophyll molecules in FMO complex",
+    "tolerance": 0.02,
+    "system_parameters": {
+      "structure_source": "X-ray_crystallography",
+      "pdb_id": "3ENI",
+      "resolution": "1.30_angstrom"
+    },
+    "reference_doi": "10.1529/biophysj.105.079483"
+  },
+  "fmo_electronic_couplings_cm": {
+    "value": [
+      [0, -87.7, 5.5, -5.9, 6.7, -13.7, -9.9],
+      [-87.7, 0, 30.8, 8.2, 0.7, 11.8, 4.3],
+      [5.5, 30.8, 0, -53.5, -2.2, -9.6, 6.0],
+      [-5.9, 8.2, -53.5, 0, -70.7, -17.0, -63.3],
+      [6.7, 0.7, -2.2, -70.7, 0, 81.1, -1.3],
+      [-13.7, 11.8, -9.6, -17.0, 81.1, 0, 39.7],
+      [-9.9, 4.3, 6.0, -63.3, -1.3, 39.7, 0]
+    ],
+    "unit": "cm^-1",
+    "source": "Adolphs & Renger Biophys. J. 2006",
+    "description": "Electronic coupling matrix between bacteriochlorophyll sites in FMO",
+    "tolerance": 0.10,
+    "system_parameters": {
+      "calculation_method": "transition_density_cube",
+      "basis_set": "INDO/S",
+      "protein_environment": "included"
+    },
+    "reference_doi": "10.1529/biophysj.105.079483"
+  },
+  "two_level_decoherence_time": {
+    "value": 100.0,
+    "unit": "femtoseconds",
+    "source": "analytical_solution",
+    "description": "Decoherence time for two-level system with pure dephasing",
+    "tolerance": 0.02,
+    "system_parameters": {
+      "dephasing_rate": 0.01,
+      "temperature": 300.0
+    }
+  },
+  "harmonic_oscillator_coherent_evolution": {
+    "value": 1.0,
+    "unit": "normalized",
+    "source": "analytical_solution", 
+    "description": "Coherent state evolution amplitude after one period",
+    "tolerance": 1e-8,
+    "system_parameters": {
+      "initial_displacement": 2.0,
+      "evolution_time": 6.283185307179586
+    }
+  },
+  "spin_boson_population_transfer": {
+    "value": 0.5,
+    "unit": "dimensionless",
+    "source": "analytical_solution",
+    "description": "Population transfer in symmetric spin-boson model",
+    "tolerance": 0.01,
+    "system_parameters": {
+      "coupling_strength": 1.0,
+      "bias": 0.0,
+      "cutoff_frequency": 1.0
+    }
+  },
+  "photosynthetic_antenna_absorption": {
+    "value": 680.0,
+    "unit": "nanometers",
+    "source": "literature_average",
+    "description": "Peak absorption wavelength for photosynthetic antenna complexes",
+    "tolerance": 0.02,
+    "system_parameters": {
+      "chlorophyll_type": "a",
+      "protein_environment": "LHCII"
+    }
+  }
+}

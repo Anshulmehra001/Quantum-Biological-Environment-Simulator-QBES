@@ -16,6 +16,8 @@ from .core.data_models import (
     CoherenceMetrics
 )
 
+__all__ = ['CoherenceAnalyzer', 'StatisticalAnalyzer', 'ResultsAnalyzer']
+
 
 class CoherenceAnalyzer:
     """Analyzer for quantum coherence measures."""
@@ -27,9 +29,103 @@ class CoherenceAnalyzer:
         """Analyze coherence evolution over time."""
         return self.analyzer.calculate_coherence_lifetime(state_trajectory)
     
+    def calculate_coherence_lifetime(self, state_trajectory):
+        """Calculate quantum coherence lifetime from state evolution."""
+        return self.analyzer.calculate_coherence_lifetime(state_trajectory)
+    
+    def analyze_decoherence(self, state_trajectory):
+        """Analyze decoherence processes in the quantum system."""
+        if not state_trajectory:
+            return {"decoherence_rate": 0.0, "coherence_time": float('inf')}
+        
+        # Calculate decoherence rate from coherence decay
+        coherence_lifetime = self.calculate_coherence_lifetime(state_trajectory)
+        decoherence_rate = 1.0 / coherence_lifetime if coherence_lifetime > 0 else 0.0
+        
+        return {
+            "decoherence_rate": decoherence_rate,
+            "coherence_time": coherence_lifetime,
+            "decay_type": "exponential"  # Assume exponential decay
+        }
+    
     def calculate_coherence_measures(self, state):
         """Calculate various coherence measures."""
         return self.analyzer.generate_coherence_metrics([state])
+
+
+class StatisticalAnalyzer:
+    """Analyzer for statistical analysis of simulation results."""
+    
+    def __init__(self):
+        self.analyzer = ResultsAnalyzer()
+    
+    def calculate_statistics(self, data_series):
+        """Calculate statistical measures for a data series.
+        
+        Args:
+            data_series: List or array of numerical data
+            
+        Returns:
+            Dictionary containing statistical measures
+        """
+        if not data_series:
+            return {"mean": 0.0, "std": 0.0, "variance": 0.0, "count": 0}
+        
+        data_array = np.array(data_series)
+        
+        return {
+            "mean": np.mean(data_array),
+            "std": np.std(data_array),
+            "variance": np.var(data_array),
+            "median": np.median(data_array),
+            "min": np.min(data_array),
+            "max": np.max(data_array),
+            "count": len(data_array)
+        }
+    
+    def generate_confidence_intervals(self, data_series, confidence_level=0.95):
+        """Generate confidence intervals for statistical measures.
+        
+        Args:
+            data_series: List or array of numerical data
+            confidence_level: Confidence level (default: 0.95 for 95% CI)
+            
+        Returns:
+            Dictionary containing confidence intervals
+        """
+        if not data_series:
+            return {"mean_ci": (0.0, 0.0), "confidence_level": confidence_level}
+        
+        data_array = np.array(data_series)
+        n = len(data_array)
+        
+        if n < 2:
+            mean_val = np.mean(data_array)
+            return {
+                "mean_ci": (mean_val, mean_val),
+                "confidence_level": confidence_level,
+                "sample_size": n
+            }
+        
+        # Calculate confidence interval for the mean
+        mean_val = np.mean(data_array)
+        std_err = stats.sem(data_array)  # Standard error of the mean
+        
+        # Use t-distribution for small samples
+        alpha = 1 - confidence_level
+        t_critical = stats.t.ppf(1 - alpha/2, n - 1)
+        
+        margin_error = t_critical * std_err
+        ci_lower = mean_val - margin_error
+        ci_upper = mean_val + margin_error
+        
+        return {
+            "mean_ci": (ci_lower, ci_upper),
+            "confidence_level": confidence_level,
+            "sample_size": n,
+            "standard_error": std_err,
+            "margin_of_error": margin_error
+        }
 
 
 class ResultsAnalyzer(AnalysisInterface):

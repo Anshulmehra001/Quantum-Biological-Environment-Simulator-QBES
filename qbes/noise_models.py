@@ -105,6 +105,20 @@ class NoiseModel(NoiseModelInterface, ABC):
         
         return rates
     
+    def calculate_decoherence_rate(self, system: QuantumSubsystem, 
+                                  temperature: float) -> float:
+        """Calculate primary decoherence rate (alias for backward compatibility).
+        
+        Args:
+            system: Quantum subsystem
+            temperature: Temperature in Kelvin
+            
+        Returns:
+            Primary decoherence rate (dephasing rate)
+        """
+        rates = self.calculate_decoherence_rates(system, temperature)
+        return rates.get("dephasing", 0.0)
+    
     def generate_lindblad_operators(self, system: QuantumSubsystem, 
                                    temperature: float) -> List[LindbladOperator]:
         """Generate Lindblad operators from decoherence rates.
@@ -609,14 +623,25 @@ class NoiseModelFactory:
     """Factory class for creating appropriate noise models."""
     
     @staticmethod
-    def create_noise_model(model_type: str, temperature: float, **kwargs):
-        """Create noise model of specified type."""
+    def create_noise_model(model_type: str, temperature: float = 300.0, **kwargs):
+        """Create noise model of specified type.
+        
+        Args:
+            model_type: Type of noise model to create
+            temperature: Temperature in Kelvin (default: 300.0)
+            **kwargs: Additional parameters for the specific noise model
+            
+        Returns:
+            Configured noise model instance
+        """
         if model_type == "protein_ohmic":
             return NoiseModelFactory.create_protein_noise_model(temperature, **kwargs)
         elif model_type == "membrane":
             return NoiseModelFactory.create_membrane_noise_model(**kwargs)
         elif model_type == "solvent_ionic":
             return NoiseModelFactory.create_solvent_noise_model(**kwargs)
+        elif model_type == "ohmic":
+            return NoiseModelFactory.create_custom_noise_model(model_type, **kwargs)
         else:
             return NoiseModelFactory.create_custom_noise_model(model_type, **kwargs)
     

@@ -2,7 +2,7 @@
 Quantum mechanical calculations and state evolution.
 """
 
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 import numpy as np
 from scipy.linalg import expm, logm, sqrtm
 from scipy.integrate import solve_ivp
@@ -147,8 +147,153 @@ class QuantumEngine(QuantumEngineInterface):
     def calculate_expectation_value(self, state: DensityMatrix, 
                                    operator: np.ndarray) -> complex:
         """Calculate expectation value of an operator."""
-        # Placeholder implementation
-        raise NotImplementedError("Expectation value calculation not yet implemented")
+        if operator.shape != state.matrix.shape:
+            raise ValueError("Operator dimensions must match density matrix dimensions")
+        
+        # Calculate Tr(ρ * O)
+        expectation = np.trace(state.matrix @ operator)
+        return expectation
+    
+    def initialize_state(self, system: QuantumSubsystem, 
+                        state_type: str = "ground", 
+                        temperature: Optional[float] = None) -> DensityMatrix:
+        """
+        Initialize quantum state for the system.
+        
+        Args:
+            system: Quantum subsystem to initialize
+            state_type: Type of initial state ("ground", "thermal", "mixed", "superposition")
+            temperature: Temperature for thermal states (in Kelvin)
+            
+        Returns:
+            Initial density matrix for the system
+            
+        Raises:
+            ValueError: If state_type is invalid or temperature is missing for thermal states
+            RuntimeError: If system validation fails
+        """
+        # Validate input parameters
+        if not isinstance(system, QuantumSubsystem):
+            raise TypeError("system must be a QuantumSubsystem instance")
+        
+        if not isinstance(state_type, str):
+            raise TypeError("state_type must be a string")
+        
+        valid_state_types = ["ground", "thermal", "mixed", "superposition"]
+        if state_type not in valid_state_types:
+            raise ValueError(f"Unknown state type: {state_type}. Valid types: {valid_state_types}")
+        
+        dimension = len(system.basis_states)
+        if dimension == 0:
+            raise ValueError("System must have at least one basis state")
+        
+        basis_labels = [f"state_{i}" for i in range(dimension)]
+        
+        try:
+            if state_type == "ground":
+                # Ground state (all population in first state)
+                coefficients = np.zeros(dimension, dtype=complex)
+                coefficients[0] = 1.0
+                pure_state = QuantumState(coefficients=coefficients, basis_labels=basis_labels)
+                return self.pure_state_to_density_matrix(pure_state)
+                
+            elif state_type == "thermal":
+                if temperature is None:
+                    raise ValueError("Temperature required for thermal state initialization")
+                if temperature <= 0:
+                    raise ValueError("Temperature must be positive")
+                # Create Hamiltonian and thermal state
+                hamiltonian = self.initialize_hamiltonian(system)
+                return self.create_thermal_state(hamiltonian, temperature)
+                
+            elif state_type == "mixed":
+                # Maximally mixed state
+                return self.create_maximally_mixed_state(dimension, basis_labels)
+                
+            elif state_type == "superposition":
+                # Equal superposition of all states
+                coefficients = np.ones(dimension, dtype=complex) / np.sqrt(dimension)
+                pure_state = QuantumState(coefficients=coefficients, basis_labels=basis_labels)
+                return self.pure_state_to_density_matrix(pure_state)
+                
+        except (ValueError, TypeError) as e:
+            # Re-raise validation errors as-is
+            raise e
+        except Exception as e:
+            # Wrap other errors in RuntimeError
+            raise RuntimeError(f"Failed to initialize quantum state: {str(e)}") from e
+    
+    def calculate_observables(self, state: DensityMatrix, 
+                            hamiltonian: Optional[Hamiltonian] = None) -> Dict[str, float]:
+        """
+        Calculate various quantum observables from the current state.
+        
+        Args:
+            state: Current density matrix
+            hamiltonian: System Hamiltonian (optional, for energy calculation)
+            
+        Returns:
+            Dictionary of observable values
+            
+        Raises:
+            TypeError: If state is not a DensityMatrix instance
+            ValueError: If state is invalid or Hamiltonian dimensions don't match
+            RuntimeError: If calculation fails
+        """
+        # Validate input parameters
+        if not isinstance(state, DensityMatrix):
+            raise TypeError("state must be a DensityMatrix instance")
+        
+        # Validate quantum state
+        validation_result = self.validate_quantum_state(state)
+        if not validation_result.is_valid:
+            raise ValueError(f"Invalid quantum state: {validation_result.errors}")
+        
+        if hamiltonian is not None:
+            if not isinstance(hamiltonian, Hamiltonian):
+                raise TypeError("hamiltonian must be a Hamiltonian instance")
+            if hamiltonian.matrix.shape != state.matrix.shape:
+                raise ValueError("Hamiltonian dimensions must match state dimensions")
+        
+        observables = {}
+        
+        try:
+            # Basic quantum measures
+            observables['purity'] = self.calculate_purity(state)
+            observables['von_neumann_entropy'] = self.calculate_von_neumann_entropy(state)
+            observables['linear_entropy'] = self.calculate_linear_entropy(state)
+            observables['coherence_l1_norm'] = self.calculate_coherence_l1_norm(state)
+            observables['trace'] = self.trace_density_matrix(state)
+            
+            # Energy if Hamiltonian provided
+            if hamiltonian is not None:
+                energy = np.real(self.calculate_expectation_value(state, hamiltonian.matrix))
+                observables['energy'] = energy
+            
+            # Population in each basis state (diagonal elements)
+            populations = np.real(np.diag(state.matrix))
+            for i, pop in enumerate(populations):
+                observables[f'population_{i}'] = pop
+            
+            # Coherences (off-diagonal elements)
+            coherences = []
+            for i in range(state.matrix.shape[0]):
+                for j in range(i+1, state.matrix.shape[1]):
+                    coherence_magnitude = np.abs(state.matrix[i, j])
+                    coherences.append(coherence_magnitude)
+                    observables[f'coherence_{i}_{j}'] = coherence_magnitude
+            
+            if coherences:
+                observables['max_coherence'] = max(coherences)
+                observables['total_coherence'] = sum(coherences)
+            else:
+                observables['max_coherence'] = 0.0
+                observables['total_coherence'] = 0.0
+            
+        except Exception as e:
+            raise RuntimeError(f"Failed to calculate observables: {str(e)}") from e
+        
+        return observables
     
     # ===== QUANTUM STATE INITIALIZATION AND MANIPULATION =====
     

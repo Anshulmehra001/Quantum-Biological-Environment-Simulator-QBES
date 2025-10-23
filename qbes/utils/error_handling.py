@@ -6,11 +6,414 @@ import logging
 import traceback
 import psutil
 import numpy as np
+import os
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 
 from ..core.interfaces import ErrorHandlerInterface
 from ..core.data_models import SimulationResults, ValidationResult, DensityMatrix
+
+
+class ImprovedErrorHandler:
+    """
+    Enhanced error handler with specific suggestions for common issues.
+    
+    This class provides user-friendly error messages with actionable solutions
+    for common configuration mistakes and runtime errors.
+    """
+    
+    def __init__(self):
+        """Initialize the improved error handler."""
+        self.common_errors = self._initialize_common_error_patterns()
+        self.suggestion_database = self._initialize_suggestion_database()
+    
+    def handle_file_not_found(self, filepath: str, context: str = "") -> str:
+        """Provide specific guidance for missing files."""
+        suggestions = [
+            f"• Check that the file path is correct: '{filepath}'",
+            "• Ensure the file exists in the specified location",
+            "• Use absolute paths if relative paths aren't working",
+            "• Check file permissions and access rights"
+        ]
+        
+        # Add context-specific suggestions
+        if filepath.endswith('.pdb'):
+            suggestions.extend([
+                "• Verify the PDB file is properly formatted",
+                "• Try downloading the PDB file again if it's from a database",
+                "• Check if the file extension should be .pdb or .PDB"
+            ])
+        elif filepath.endswith(('.yaml', '.yml')):
+            suggestions.extend([
+                "• Generate a new configuration file with: qbes generate-config config.yaml",
+                "• Use the interactive wizard: qbes generate-config config.yaml --interactive"
+            ])
+        
+        # Check if similar files exist
+        directory = os.path.dirname(filepath) or "."
+        filename = os.path.basename(filepath)
+        
+        if os.path.exists(directory):
+            similar_files = self._find_similar_files(directory, filename)
+            if similar_files:
+                suggestions.append(f"• Did you mean one of these files? {', '.join(similar_files[:3])}")
+        
+        error_msg = f"File not found: {filepath}"
+        if context:
+            error_msg += f" (Context: {context})"
+        
+        return self._format_error_with_suggestions(error_msg, suggestions)
+    
+    def handle_invalid_parameter(self, param: str, value: Any, expected: str, context: str = "") -> str:
+        """Provide specific guidance for invalid parameters."""
+        suggestions = []
+        
+        # Parameter-specific suggestions
+        if param.lower() in ['temperature', 'temp']:
+            suggestions.extend([
+                "• Temperature must be positive (in Kelvin)",
+                "• Typical values: 300K (room temp), 310K (body temp), 77K (liquid nitrogen)",
+                "• Check if you meant to use Celsius and need to convert to Kelvin"
+            ])
+        elif param.lower() in ['time_step', 'timestep', 'dt']:
+            suggestions.extend([
+                "• Time step must be positive and small (typically 1e-15 to 1e-12 seconds)",
+                "• For quantum systems, use femtosecond time steps (1e-15 s)",
+                "• Larger time steps may cause numerical instability"
+            ])
+        elif param.lower() in ['simulation_time', 'total_time']:
+            suggestions.extend([
+                "• Simulation time must be positive",
+                "• Typical values: 1e-12 s (1 ps) to 1e-9 s (1 ns)",
+                "• Start with shorter times for testing"
+            ])
+        elif 'path' in param.lower() or 'file' in param.lower():
+            suggestions.extend([
+                "• Use forward slashes (/) or double backslashes (\\\\) in paths",
+                "• Avoid spaces in file paths or use quotes",
+                "• Check that the directory exists"
+            ])
+        else:
+            suggestions.append(f"• Expected format: {expected}")
+        
+        # Value-specific suggestions
+        if isinstance(value, str):
+            if not value.strip():
+                suggestions.append("• Parameter cannot be empty")
+            elif value.lower() in ['none', 'null', 'n/a']:
+                suggestions.append("• Use a valid value instead of None/null")
+        elif isinstance(value, (int, float)):
+            if value <= 0 and 'positive' in expected.lower():
+                suggestions.append("• Value must be greater than zero")
+            elif value < 0 and 'non-negative' in expected.lower():
+                suggestions.append("• Value must be zero or positive")
+        
+        error_msg = f"Invalid parameter '{param}': got '{value}', expected {expected}"
+        if context:
+            error_msg += f" (Context: {context})"
+        
+        return self._format_error_with_suggestions(error_msg, suggestions)
+    
+    def handle_configuration_error(self, config_error: str, config_file: str = "") -> str:
+        """Provide specific guidance for configuration errors."""
+        suggestions = []
+        
+        error_lower = config_error.lower()
+        
+        if 'yaml' in error_lower or 'syntax' in error_lower:
+            suggestions.extend([
+                "• Check YAML syntax - ensure proper indentation (use spaces, not tabs)",
+                "• Verify all quotes are properly closed",
+                "• Use a YAML validator online to check syntax",
+                "• Generate a new config file: qbes generate-config new_config.yaml"
+            ])
+        elif 'missing' in error_lower or 'required' in error_lower:
+            suggestions.extend([
+                "• Check that all required fields are present in the configuration",
+                "• Use the interactive wizard: qbes generate-config config.yaml --interactive",
+                "• Compare with a working example configuration"
+            ])
+        elif 'pdb' in error_lower:
+            suggestions.extend([
+                "• Ensure the PDB file path is correct and the file exists",
+                "• Check that the PDB file is properly formatted",
+                "• Try using an absolute path to the PDB file"
+            ])
+        else:
+            suggestions.extend([
+                "• Validate your configuration: qbes validate config.yaml",
+                "• Generate a new configuration file as a reference",
+                "• Check the documentation for configuration examples"
+            ])
+        
+        error_msg = f"Configuration error: {config_error}"
+        if config_file:
+            error_msg += f" in file '{config_file}'"
+        
+        return self._format_error_with_suggestions(error_msg, suggestions)
+    
+    def handle_dependency_error(self, missing_dependency: str, import_error: str = "") -> str:
+        """Provide specific installation instructions for missing dependencies."""
+        suggestions = []
+        
+        # Common dependency installation instructions
+        dependency_instructions = {
+            'numpy': "pip install numpy",
+            'scipy': "pip install scipy",
+            'matplotlib': "pip install matplotlib",
+            'yaml': "pip install PyYAML",
+            'click': "pip install click",
+            'psutil': "pip install psutil",
+            'openmm': "conda install -c conda-forge openmm",
+            'mdtraj': "conda install -c conda-forge mdtraj",
+            'rdkit': "conda install -c conda-forge rdkit"
+        }
+        
+        # Find installation command
+        install_cmd = None
+        for dep, cmd in dependency_instructions.items():
+            if dep.lower() in missing_dependency.lower():
+                install_cmd = cmd
+                break
+        
+        if install_cmd:
+            suggestions.extend([
+                f"• Install the missing dependency: {install_cmd}",
+                "• If using conda, try: conda install -c conda-forge " + missing_dependency.lower(),
+                "• Ensure you're in the correct Python environment"
+            ])
+        else:
+            suggestions.extend([
+                f"• Install the missing dependency: pip install {missing_dependency}",
+                f"• Try conda if pip fails: conda install {missing_dependency}",
+                "• Check if the package name is spelled correctly"
+            ])
+        
+        # General suggestions
+        suggestions.extend([
+            "• Update pip: python -m pip install --upgrade pip",
+            "• Check your Python environment is activated",
+            "• Try installing QBES again: pip install -e ."
+        ])
+        
+        error_msg = f"Missing dependency: {missing_dependency}"
+        if import_error:
+            error_msg += f" ({import_error})"
+        
+        return self._format_error_with_suggestions(error_msg, suggestions)
+    
+    def handle_memory_error(self, system_size: int = 0, operation: str = "") -> str:
+        """Provide specific guidance for memory-related errors."""
+        suggestions = [
+            "• Reduce the system size or simulation time",
+            "• Close other applications to free up memory",
+            "• Use a machine with more RAM",
+            "• Enable checkpointing to reduce memory usage"
+        ]
+        
+        if system_size > 0:
+            if system_size > 10000:
+                suggestions.insert(0, f"• System size ({system_size} atoms) is very large - consider reducing to <5000 atoms")
+            elif system_size > 5000:
+                suggestions.insert(0, f"• System size ({system_size} atoms) is large - try reducing to <2000 atoms")
+        
+        if operation:
+            if 'matrix' in operation.lower():
+                suggestions.append("• Use sparse matrix representations if available")
+            elif 'trajectory' in operation.lower():
+                suggestions.append("• Reduce trajectory saving frequency")
+        
+        # Add system-specific suggestions
+        try:
+            available_gb = psutil.virtual_memory().available / (1024**3)
+            suggestions.append(f"• Available memory: {available_gb:.1f} GB")
+            
+            if available_gb < 2:
+                suggestions.append("• Very low memory available - close other applications")
+            elif available_gb < 8:
+                suggestions.append("• Limited memory - consider using a smaller system")
+        except:
+            pass
+        
+        error_msg = "Memory error: Insufficient memory for operation"
+        if operation:
+            error_msg += f" ({operation})"
+        
+        return self._format_error_with_suggestions(error_msg, suggestions)
+    
+    def handle_numerical_error(self, error_type: str, context: str = "") -> str:
+        """Provide specific guidance for numerical errors."""
+        suggestions = []
+        
+        error_lower = error_type.lower()
+        
+        if 'convergence' in error_lower:
+            suggestions.extend([
+                "• Reduce the time step by a factor of 2-10",
+                "• Check initial conditions are reasonable",
+                "• Verify system parameters are physical",
+                "• Try a different integration method"
+            ])
+        elif 'singular' in error_lower or 'invert' in error_lower:
+            suggestions.extend([
+                "• Check for linear dependencies in the basis set",
+                "• Add regularization to avoid singular matrices",
+                "• Verify the Hamiltonian is properly constructed",
+                "• Check for zero eigenvalues"
+            ])
+        elif 'overflow' in error_lower or 'underflow' in error_lower:
+            suggestions.extend([
+                "• Reduce time step to avoid numerical overflow",
+                "• Check parameter values are reasonable",
+                "• Use double precision arithmetic",
+                "• Scale the problem to avoid extreme values"
+            ])
+        elif 'nan' in error_lower or 'inf' in error_lower:
+            suggestions.extend([
+                "• Check for division by zero in calculations",
+                "• Verify all input parameters are finite",
+                "• Reduce time step to improve stability",
+                "• Check initial conditions"
+            ])
+        else:
+            suggestions.extend([
+                "• Reduce time step for better numerical stability",
+                "• Check all parameters are within reasonable ranges",
+                "• Verify input data is properly formatted"
+            ])
+        
+        error_msg = f"Numerical error: {error_type}"
+        if context:
+            error_msg += f" (Context: {context})"
+        
+        return self._format_error_with_suggestions(error_msg, suggestions)
+    
+    def suggest_configuration_fixes(self, validation_errors: List[str]) -> List[str]:
+        """Suggest fixes for common configuration validation errors."""
+        suggestions = []
+        
+        for error in validation_errors:
+            error_lower = error.lower()
+            
+            if 'pdb' in error_lower and 'not found' in error_lower:
+                suggestions.append("Fix PDB file path in configuration")
+            elif 'temperature' in error_lower:
+                suggestions.append("Set temperature to a positive value (e.g., 300.0 K)")
+            elif 'time' in error_lower and 'step' in error_lower:
+                suggestions.append("Set time_step to a small positive value (e.g., 1e-15 s)")
+            elif 'simulation_time' in error_lower:
+                suggestions.append("Set simulation_time to a positive value (e.g., 1e-12 s)")
+            elif 'output' in error_lower and 'directory' in error_lower:
+                suggestions.append("Create output directory or set writable path")
+            elif 'selection' in error_lower:
+                suggestions.append("Check quantum subsystem selection criteria")
+            else:
+                suggestions.append(f"Review and fix: {error}")
+        
+        return suggestions
+    
+    def _format_error_with_suggestions(self, error_msg: str, suggestions: List[str]) -> str:
+        """Format error message with suggestions."""
+        formatted_msg = f"\n{'='*60}\n"
+        formatted_msg += f"❌ ERROR\n"
+        formatted_msg += f"{'='*60}\n"
+        formatted_msg += f"{error_msg}\n\n"
+        
+        if suggestions:
+            formatted_msg += f"💡 SUGGESTIONS:\n"
+            for suggestion in suggestions:
+                formatted_msg += f"{suggestion}\n"
+        
+        formatted_msg += f"{'='*60}\n"
+        
+        return formatted_msg
+    
+    def _find_similar_files(self, directory: str, target_filename: str) -> List[str]:
+        """Find files with similar names in the directory."""
+        try:
+            files = os.listdir(directory)
+            target_lower = target_filename.lower()
+            target_base = os.path.splitext(target_lower)[0]
+            
+            similar = []
+            for file in files:
+                file_lower = file.lower()
+                file_base = os.path.splitext(file_lower)[0]
+                
+                # Check for similar names
+                if (target_base in file_base or file_base in target_base or 
+                    abs(len(target_base) - len(file_base)) <= 2):
+                    similar.append(file)
+            
+            return similar[:5]  # Return up to 5 similar files
+        except:
+            return []
+    
+    def _initialize_common_error_patterns(self) -> Dict[str, List[str]]:
+        """Initialize patterns for common errors."""
+        return {
+            'file_not_found': [
+                'No such file or directory',
+                'FileNotFoundError',
+                'cannot find file',
+                'file does not exist'
+            ],
+            'invalid_parameter': [
+                'ValueError',
+                'invalid value',
+                'out of range',
+                'must be positive'
+            ],
+            'configuration_error': [
+                'YAMLError',
+                'configuration invalid',
+                'missing required field',
+                'syntax error'
+            ],
+            'dependency_error': [
+                'ModuleNotFoundError',
+                'ImportError',
+                'No module named',
+                'cannot import'
+            ],
+            'memory_error': [
+                'MemoryError',
+                'out of memory',
+                'insufficient memory',
+                'allocation failed'
+            ],
+            'numerical_error': [
+                'convergence failed',
+                'singular matrix',
+                'overflow',
+                'underflow',
+                'NaN',
+                'infinity'
+            ]
+        }
+    
+    def _initialize_suggestion_database(self) -> Dict[str, List[str]]:
+        """Initialize database of suggestions for different error types."""
+        return {
+            'general': [
+                "Check the documentation for examples",
+                "Validate your configuration file",
+                "Try with a smaller test system first",
+                "Ensure all dependencies are installed"
+            ],
+            'installation': [
+                "Reinstall QBES: pip install -e .",
+                "Update your Python environment",
+                "Check system requirements",
+                "Try using conda instead of pip"
+            ],
+            'performance': [
+                "Reduce system size",
+                "Use shorter simulation times",
+                "Enable checkpointing",
+                "Close other applications"
+            ]
+        }
 
 
 class ErrorHandler(ErrorHandlerInterface):

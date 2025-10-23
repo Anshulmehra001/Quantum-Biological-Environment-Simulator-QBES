@@ -24,8 +24,8 @@ try:
     from qbes.visualization import VisualizationEngine
     QBES_AVAILABLE = True
 except ImportError as e:
-    print(f"⚠️  QBES modules not fully available: {e}")
-    print("🔄 Running in demonstration mode...")
+    print(f"WARNING: QBES modules not fully available: {e}")
+    print("Running in demonstration mode...")
     QBES_AVAILABLE = False
 
 import numpy as np
@@ -42,23 +42,22 @@ class QBESCLIInterface:
     def print_banner(self):
         """Print QBES banner"""
         banner = """
-╔══════════════════════════════════════════════════════════════╗
-║                                                              ║
-║    ██████╗ ██████╗ ███████╗███████╗                         ║
-║   ██╔═══██╗██╔══██╗██╔════╝██╔════╝                         ║
-║   ██║   ██║██████╔╝█████╗  ███████╗                         ║
-║   ██║▄▄ ██║██╔══██╗██╔══╝  ╚════██║                         ║
-║   ╚██████╔╝██████╔╝███████╗███████║                         ║
-║    ╚══▀▀═╝ ╚═════╝ ╚══════╝╚══════╝                         ║
-║                                                              ║
-║         Quantum Biological Environment Simulator            ║
-║              Professional CLI Interface                      ║
-║                                                              ║
-╚══════════════════════════════════════════════════════════════╝
+================================================================
+                                                              
+    QQQQQQ  BBBBB   EEEEEEE  SSSSS                         
+   QQ    QQ BB   BB EE       SS                            
+   QQ    QQ BBBBBB  EEEEE    SSSSS                         
+   QQ  Q QQ BB   BB EE           SS                        
+    QQQQQQ  BBBBB   EEEEEEE  SSSSS                         
+                                                              
+         Quantum Biological Environment Simulator            
+              Professional CLI Interface                      
+                                                              
+================================================================
         """
         print(banner)
-        print(f"🔬 QBES Backend: {'Available' if QBES_AVAILABLE else 'Demo Mode'}")
-        print(f"📅 Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"QBES Backend: {'Available' if QBES_AVAILABLE else 'Demo Mode'}")
+        print(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print("=" * 66)
     
     def create_config_template(self, template_type="basic", output_file=None):
@@ -159,8 +158,8 @@ class QBESCLIInterface:
         }
         
         if template_type not in templates:
-            print(f"❌ Unknown template type: {template_type}")
-            print(f"📋 Available templates: {list(templates.keys())}")
+            print(f"ERROR: Unknown template type: {template_type}")
+            print(f"Available templates: {list(templates.keys())}")
             return False
         
         config = templates[template_type]
@@ -173,14 +172,14 @@ class QBESCLIInterface:
         with open(output_file, 'w') as f:
             json.dump(config, f, indent=2)
         
-        print(f"✅ Created {template_type} configuration: {output_file}")
+        print(f"SUCCESS: Created {template_type} configuration: {output_file}")
         return True
     
     def run_simulation(self, config_file, output_dir=None):
         """Run simulation from config file"""
         config_path = Path(config_file)
         if not config_path.exists():
-            print(f"❌ Configuration file not found: {config_file}")
+            print(f"ERROR: Configuration file not found: {config_file}")
             return False
         
         if output_dir is None:
@@ -191,14 +190,18 @@ class QBESCLIInterface:
         
         output_dir.mkdir(parents=True, exist_ok=True)
         
-        print(f"🚀 Starting simulation...")
-        print(f"📁 Config: {config_file}")
-        print(f"📁 Output: {output_dir}")
+        print(f"Starting simulation...")
+        print(f"Config: {config_file}")
+        print(f"Output: {output_dir}")
         
         try:
             # Load configuration
-            with open(config_path, 'r') as f:
-                config = json.load(f)
+            with open(config_path, 'r', encoding='utf-8') as f:
+                if config_path.suffix.lower() in ['.yaml', '.yml']:
+                    import yaml
+                    config = yaml.safe_load(f)
+                else:
+                    config = json.load(f)
             
             if QBES_AVAILABLE:
                 results = self._run_real_simulation(config)
@@ -208,13 +211,13 @@ class QBESCLIInterface:
             # Save results
             self._save_results(results, output_dir, config)
             
-            print(f"✅ Simulation completed successfully!")
-            print(f"📊 Results saved to: {output_dir}")
+            print(f"SUCCESS: Simulation completed successfully!")
+            print(f"Results saved to: {output_dir}")
             
             return True
             
         except Exception as e:
-            print(f"❌ Simulation failed: {e}")
+            print(f"ERROR: Simulation failed: {e}")
             return False
     
     def _run_real_simulation(self, config):
@@ -231,18 +234,21 @@ class QBESCLIInterface:
     
     def _run_mock_simulation(self, config):
         """Run mock simulation for demonstration"""
-        print("🔄 Running demonstration simulation...")
+        print("Running demonstration simulation...")
         
-        # Extract parameters
-        total_time = config.get("simulation", {}).get("total_time", 10.0)
-        time_step = config.get("simulation", {}).get("time_step", 0.1)
+        # Extract parameters with proper defaults for YAML config
+        simulation_time = config.get("simulation", {}).get("simulation_time", 1.0e-12)  # 1 ps
+        time_step = config.get("simulation", {}).get("time_step", 1.0e-15)  # 1 fs
         temperature = config.get("system", {}).get("temperature", 300.0)
-        energy_gap = config.get("system", {}).get("hamiltonian", {}).get("energy_gap", 2.0)
-        coupling = config.get("system", {}).get("hamiltonian", {}).get("coupling", 0.1)
-        noise_strength = config.get("noise", {}).get("strength", 0.1)
         
-        # Generate time points
-        time_points = np.arange(0, total_time + time_step, time_step)
+        # Use reasonable defaults for quantum parameters
+        energy_gap = 2.0  # eV
+        coupling = 0.1    # eV
+        noise_strength = config.get("noise_model", {}).get("coupling_strength", 1.0)
+        
+        # Generate reasonable number of time points (max 1000 for demo)
+        num_steps = min(1000, int(simulation_time / time_step))
+        time_points = np.linspace(0, simulation_time, num_steps)
         
         # Calculate decoherence rate based on parameters
         decoherence_rate = noise_strength * (temperature / 300.0) ** 0.5
@@ -385,16 +391,16 @@ The {analysis.get('coherence_lifetime', 'N/A'):.1f} ps coherence lifetime is rea
     def list_simulations(self):
         """List all simulation results"""
         if not self.results_dir.exists():
-            print("📁 No simulation results directory found")
+            print("No simulation results directory found")
             return
         
         sim_dirs = [d for d in self.results_dir.iterdir() if d.is_dir()]
         
         if not sim_dirs:
-            print("📁 No simulation results found")
+            print("No simulation results found")
             return
         
-        print(f"📊 Found {len(sim_dirs)} simulation results:")
+        print(f"Found {len(sim_dirs)} simulation results:")
         print("=" * 60)
         
         for sim_dir in sorted(sim_dirs):
@@ -409,30 +415,30 @@ The {analysis.get('coherence_lifetime', 'N/A'):.1f} ps coherence lifetime is rea
                     config = results.get("config", {})
                     analysis = results.get("analysis", {})
                     
-                    print(f"📁 {sim_dir.name}")
-                    print(f"   📅 Time: {timestamp}")
-                    print(f"   🌡️  Temperature: {config.get('system', {}).get('temperature', 'N/A')} K")
-                    print(f"   ⏱️  Lifetime: {analysis.get('coherence_lifetime', 'N/A'):.1f} ps")
-                    print(f"   📊 Files: {len(list(sim_dir.glob('*')))} files")
+                    print(f"Directory: {sim_dir.name}")
+                    print(f"   Time: {timestamp}")
+                    print(f"   Temperature: {config.get('system', {}).get('temperature', 'N/A')} K")
+                    print(f"   Lifetime: {analysis.get('coherence_lifetime', 'N/A'):.1f} ps")
+                    print(f"   Files: {len(list(sim_dir.glob('*')))} files")
                     print()
                     
                 except Exception as e:
-                    print(f"📁 {sim_dir.name} (metadata error: {e})")
+                    print(f"Directory: {sim_dir.name} (metadata error: {e})")
             else:
-                print(f"📁 {sim_dir.name} (no results file)")
+                print(f"Directory: {sim_dir.name} (no results file)")
     
     def view_results(self, results_dir):
         """View simulation results"""
         results_path = Path(results_dir)
         
         if not results_path.exists():
-            print(f"❌ Results directory not found: {results_dir}")
+            print(f"ERROR: Results directory not found: {results_dir}")
             return False
         
         # Check for results file
         results_file = results_path / "simulation_results.json"
         if not results_file.exists():
-            print(f"❌ No simulation results found in: {results_dir}")
+            print(f"ERROR: No simulation results found in: {results_dir}")
             return False
         
         try:
@@ -440,13 +446,13 @@ The {analysis.get('coherence_lifetime', 'N/A'):.1f} ps coherence lifetime is rea
                 results = json.load(f)
             
             # Display summary
-            print(f"🔬 QBES Results Analysis")
+            print(f"QBES Results Analysis")
             print("=" * 60)
-            print(f"📁 Results Directory: {results_path.name}")
+            print(f"Results Directory: {results_path.name}")
             
             # Show available files
             files = list(results_path.glob('*'))
-            print(f"📊 Available Files:")
+            print(f"Available Files:")
             for file in files:
                 size = file.stat().st_size
                 print(f"   • {file.name} ({size:,} bytes)")
@@ -462,7 +468,7 @@ The {analysis.get('coherence_lifetime', 'N/A'):.1f} ps coherence lifetime is rea
                     print(f.read())
             
             print("=" * 50)
-            print("📊 KEY NUMERICAL RESULTS")
+            print("KEY NUMERICAL RESULTS")
             print("=" * 50)
             
             config = results.get("config", {})
@@ -506,7 +512,7 @@ The {analysis.get('coherence_lifetime', 'N/A'):.1f} ps coherence lifetime is rea
                     print(f"   ... ({len(times) - 10} more data points)")
             
             print("=" * 50)
-            print("📊 VISUALIZATION OPTIONS")
+            print("VISUALIZATION OPTIONS")
             print("=" * 50)
             print("To create plots from your data:")
             print("Option 1 - Python/Matplotlib:")
@@ -523,7 +529,7 @@ The {analysis.get('coherence_lifetime', 'N/A'):.1f} ps coherence lifetime is rea
             return True
             
         except Exception as e:
-            print(f"❌ Error reading results: {e}")
+            print(f"ERROR: Error reading results: {e}")
             return False
     
     def start_web_interface(self):
@@ -531,7 +537,7 @@ The {analysis.get('coherence_lifetime', 'N/A'):.1f} ps coherence lifetime is rea
         web_app = Path("website/app.py")
         
         if not web_app.exists():
-            print("❌ Web interface not found")
+            print("ERROR: Web interface not found")
             return False
         
         print("🌐 Starting QBES Web Interface...")
@@ -540,9 +546,9 @@ The {analysis.get('coherence_lifetime', 'N/A'):.1f} ps coherence lifetime is rea
         try:
             subprocess.run([sys.executable, str(web_app)], cwd="website")
         except KeyboardInterrupt:
-            print("\n🛑 Web interface stopped")
+            print("\nWeb interface stopped")
         except Exception as e:
-            print(f"❌ Failed to start web interface: {e}")
+            print(f"ERROR: Failed to start web interface: {e}")
         
         return True
 
@@ -619,7 +625,7 @@ Examples:
 
 def interactive_mode(cli):
     """Interactive CLI mode"""
-    print("🎯 Entering interactive mode. Type 'help' for commands or 'quit' to exit.")
+    print("Entering interactive mode. Type 'help' for commands or 'quit' to exit.")
     
     while True:
         try:
@@ -670,14 +676,14 @@ Templates: basic, photosynthesis, enzyme, membrane
                 continue
             
             else:
-                print(f"❌ Unknown command: {command}")
-                print("💡 Type 'help' for available commands")
+                print(f"ERROR: Unknown command: {command}")
+                print("Type 'help' for available commands")
         
         except KeyboardInterrupt:
             print("\n👋 Goodbye!")
             break
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"ERROR: {e}")
 
 if __name__ == "__main__":
     main()

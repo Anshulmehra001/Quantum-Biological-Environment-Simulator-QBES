@@ -1,0 +1,166 @@
+{
+  "system_info": {
+    "name": "Water Box Example",
+    "n_atoms": 30,
+    "n_quantum_atoms": 6,
+    "n_classical_atoms": 24,
+    "temperature": 300.0,
+    "simulation_time": 1.0e-12,
+    "time_step": 1.0e-15
+  },
+  "quantum_coherence": {
+    "coherence_lifetime": {
+      "value": 2.457e-13,
+      "unit": "s",
+      "tolerance": 2.5e-14,
+      "description": "Time for coherence to decay to 1/e of initial value"
+    },
+    "decoherence_rate": {
+      "value": 4.07e12,
+      "unit": "Hz",
+      "tolerance": 8.0e11,
+      "description": "Rate of quantum decoherence"
+    },
+    "initial_purity": {
+      "value": 1.0,
+      "unit": "dimensionless",
+      "tolerance": 0.01,
+      "description": "Initial quantum purity (should be 1.0)"
+    },
+    "final_purity": {
+      "value": 0.234,
+      "unit": "dimensionless",
+      "tolerance": 0.05,
+      "description": "Final quantum purity after decoherence"
+    },
+    "coherence_decay_constant": {
+      "value": 4.07e12,
+      "unit": "Hz",
+      "tolerance": 8.0e11,
+      "description": "Exponential decay constant for coherence"
+    }
+  },
+  "energy_analysis": {
+    "initial_energy": {
+      "value": -76.3,
+      "unit": "kcal/mol",
+      "tolerance": 5.0,
+      "description": "Initial total energy of the system"
+    },
+    "final_energy": {
+      "value": -76.2,
+      "unit": "kcal/mol",
+      "tolerance": 5.0,
+      "description": "Final total energy of the system"
+    },
+    "energy_conservation_error": {
+      "value": 0.0013,
+      "unit": "fraction",
+      "tolerance": 0.01,
+      "description": "Relative energy conservation error (should be < 1%)"
+    },
+    "average_kinetic_energy": {
+      "value": 1.86,
+      "unit": "kcal/mol",
+      "tolerance": 0.5,
+      "description": "Average kinetic energy (related to temperature)"
+    },
+    "average_potential_energy": {
+      "value": -78.1,
+      "unit": "kcal/mol",
+      "tolerance": 5.0,
+      "description": "Average potential energy"
+    }
+  },
+  "structural_analysis": {
+    "average_oh_distance": {
+      "value": 0.96,
+      "unit": "Å",
+      "tolerance": 0.05,
+      "description": "Average O-H bond length in water molecules"
+    },
+    "average_hoh_angle": {
+      "value": 104.5,
+      "unit": "degrees",
+      "tolerance": 5.0,
+      "description": "Average H-O-H bond angle"
+    },
+    "hydrogen_bonds": {
+      "average_count": 3.2,
+      "unit": "count",
+      "tolerance": 1.0,
+      "description": "Average number of hydrogen bonds per water molecule"
+    },
+    "radial_distribution_peak": {
+      "value": 2.85,
+      "unit": "Å",
+      "tolerance": 0.1,
+      "description": "First peak in O-O radial distribution function"
+    }
+  },
+  "quantum_dynamics": {
+    "oscillation_frequency": {
+      "value": 3.2e13,
+      "unit": "Hz",
+      "tolerance": 5.0e12,
+      "description": "Dominant frequency in coherence oscillations"
+    },
+    "dephasing_time": {
+      "value": 1.8e-13,
+      "unit": "s",
+      "tolerance": 5.0e-14,
+      "description": "Pure dephasing time (T2*)"
+    },
+    "population_relaxation_time": {
+      "value": 4.5e-13,
+      "unit": "s",
+      "tolerance": 1.0e-13,
+      "description": "Population relaxation time (T1)"
+    }
+  },
+  "environmental_coupling": {
+    "effective_coupling_strength": {
+      "value": 1.0,
+      "unit": "dimensionless",
+      "tolerance": 0.2,
+      "description": "Effective system-environment coupling"
+    },
+    "spectral_density_cutoff": {
+      "value": 2.0e13,
+      "unit": "Hz",
+      "tolerance": 2.0e12,
+      "description": "Effective cutoff frequency of environmental noise"
+    },
+    "reorganization_energy": {
+      "value": 35.0,
+      "unit": "cm⁻¹",
+      "tolerance": 5.0,
+      "description": "Environmental reorganization energy"
+    }
+  },
+  "simulation_quality": {
+    "timesteps_completed": 1000,
+    "convergence_achieved": true,
+    "numerical_stability": "good",
+    "energy_drift": {
+      "value": 0.001,
+      "unit": "kcal/mol/ps",
+      "tolerance": 0.01,
+      "description": "Energy drift rate (should be minimal)"
+    }
+  },
+  "physical_interpretation": {
+    "coherence_regime": "ultrafast",
+    "decoherence_mechanism": "thermal_fluctuations",
+    "dominant_interactions": ["hydrogen_bonding", "van_der_waals"],
+    "quantum_effects": ["coherent_vibrations", "zero_point_motion"],
+    "classical_limit_reached": true,
+    "biological_relevance": "fundamental_water_dynamics"
+  },
+  "validation_notes": {
+    "literature_comparison": "Results consistent with femtosecond spectroscopy of liquid water",
+    "temperature_dependence": "Coherence lifetime scales as expected with temperature",
+    "size_effects": "Results should be independent of box size for this system size",
+    "force_field_dependence": "TIP3P model gives reasonable water structure and dynamics"
+  }
+}
